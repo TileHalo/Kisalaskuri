@@ -49,10 +49,10 @@
 use std::f64::consts::*;
 /// Function aikavali calculates the time difference between two inputs
 /// in seconds across two dates.
-pub fn aikavali(a: i32, b: i32) -> i32 {
+pub fn aikavali(a: f64, b: f64) -> f64 {
     let s = b - a;
-    if s < 0 {
-        return s + 86400;
+    if s < 0.0 {
+        return s + 86400.0;
     }
     s
 }
@@ -145,14 +145,14 @@ mod tests {
     use super::*;
     #[test]
     fn test_aikavali() {
-        assert_eq!(5, aikavali(5, 10));
-        assert_eq!(0, aikavali(10, 10));
-        assert_eq!(100, aikavali(86400, 100));
+        assert_eq!(5.0, aikavali(5.0, 10.0));
+        assert_eq!(0.0, aikavali(10.0, 10.0));
+        assert_eq!(100.0, aikavali(86400.0, 100.0));
     }
     #[test]
     #[should_panic]
     fn test_aikavali_n() {
-        assert!(aikavali(8533, 15) < 0)
+        assert!(aikavali(8533.0, 15.0) < 0.2)
     }
     #[test]
     fn test_abs() {

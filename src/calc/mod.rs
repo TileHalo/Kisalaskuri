@@ -3,96 +3,49 @@
 //! For Kila-only calculation operations, please consult submodule kilac.
 //! For Kipa-compatible calculation operations, please consult module kipac.
 
-use super::kipac;
 pub mod kilac;
 pub mod lexer;
-use self::lexer::{Token, Lexer};
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Fun {
-    Add,
-    Sub,
-    Div,
-    Mul,
-    Mod,
-    Pow,
-    Aikavali,
-    Abs,
-    Log,
-    Ln,
-    Floor,
-    Ceil,
-    Sqrt,
-    Exp,
-    Interpoloi,
-    Min,
-    Max,
-    Sum,
-    Med,
-    Kesk,
-    If,
-    SS,
-    List,
-    Pair,
-    Empty,
-}
+pub mod lisp;
+pub mod parser;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Ast {
-    Node(Vec<Box<Ast>>, Fun),
-    Leaf(f64),
-    Get(String),
-    Empty,
-}
+use self::lisp::lispify;
+use self::lexer::Lexer;
+use self::parser::{Fun, Ast, parse};
+use super::kipac;
 
-fn parse_internal(mut input: Vec<Token>) -> Ast {
-    let mut cur = Fun::List;
-    let mut nodes: Vec<Box<Ast>> = Vec::new();
-    while let Some(token) = input.pop() {
-        match token {
-            Token::Add => {
-                cur = Fun::Add;
+pub fn eval(ast: Ast) -> f64 {
+    return match ast {
+        Ast::Empty => panic!("Met empty abstract syntax tree node {:?}", ast),
+        Ast::Leaf(num) => num,
+        Ast::Node(vec, fun) => {
+            let mut res: Vec<f64> = Vec::new();
+            for i in vec {
+                res.push(eval(i.as_ref().clone()));
             }
-            Token::Sub => unimplemented!(),
-            Token::Sum => unimplemented!(),
-            Token::Div => unimplemented!(),
-            Token::Mul => unimplemented!(),
-            Token::Mod => unimplemented!(),
-            Token::Pow => unimplemented!(),
-            Token::Aikavali => unimplemented!(),
-            Token::Abs => cur = Fun::Abs,
-            Token::Log => cur = Fun::Log,
-            Token::Ln => cur = Fun::Ln,
-            Token::Floor => cur = Fun::Floor,
-            Token::Ceil => cur = Fun::Ceil,
-            Token::Sqrt => cur = Fun::Sqrt,
-            Token::Exp => cur = Fun::Exp,
-            Token::Interpoloi => cur = Fun::Interpoloi,
-            Token::Min => cur = Fun::Min,
-            Token::Max => cur = Fun::Max,
-            Token::Med => cur = Fun::Med,
-            Token::Kesk => cur = Fun::Kesk,
-            Token::If => cur = Fun::If,
-            Token::SS => unimplemented!(),
-            Token::ParL => nodes.push(Box::new(parse_internal(input.clone()))),
-            Token::ParR => return Ast::Node(nodes, cur),
-            Token::BrackL => {
-                cur = Fun::List;
-                nodes.push(Box::new(parse_internal(input.clone())));
-            }
-            Token::BrackR => return Ast::Node(nodes, cur),
-            Token::Comma => (),
-            Token::Num(num) => nodes.push(Box::new(Ast::Leaf(num))),
-            Token::Expr(expr) => nodes.push(Box::new(Ast::Get(expr))),
-            _ => panic!("Shiet"),
+            return match fun {
+                Fun::Abs => kipac::abs(res[0]),
+                Fun::Log => kipac::log(res[0]),
+                Fun::Aikavali => kipac::aikavali(res[0], res[1]),
+                Fun::Ln => kipac::ln(res[0]),
+                Fun::Floor => kipac::floor(res[0]),
+                Fun::Ceil => kipac::ceil(res[0]),
+                Fun::Sqrt => kipac::sqrt(res[0]),
+                Fun::Exp => kipac::exp(res[0]),
+                Fun::Mod => kipac::kmod(res[0], res[1]),
+                Fun::Pow => kipac::pow(res[0], res[1]),
+                Fun::Interpoloi => kipac::abs(res[0]),
+                Fun::Min => kipac::min(res),
+                Fun::Max => kipac::max(res),
+                Fun::Sum | Fun::Add => kipac::sum(res),
+                Fun::Med => kipac::median(res),
+                Fun::Kesk => kipac::mean(res),
+                Fun::Div => res[0]/res[0],
+                Fun::Mul => res[0]*res[0],
+                _ => unimplemented!("Function {:?}", fun),
+            };
         }
-    }
-    return Ast::Node(nodes, cur);
-
-}
-
-pub fn parse(mut input: Vec<Token>) -> Ast {
-    input.reverse();
-    parse_internal(input)
+        _ => unimplemented!("{:?}", ast),
+    };
 }
 
 #[cfg(test)]
@@ -100,48 +53,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_simple() {
-        let tokens = vec![
-            Token::Min,
-            Token::ParL,
-            Token::Num(0.0),
-            Token::Num(5.0),
-            Token::ParR,
-        ];
-        let ast = Ast::Node(
-            vec![Box::new(Ast::Leaf(0.0)), Box::new(Ast::Leaf(5.0))],
-            Fun::Min,
-        );
-        assert_eq!(ast, parse(tokens));
+    fn test_add() {
+        let mut lexer = Lexer::new("5+6");
+        assert_eq!(11.0, eval(parse(lispify(lexer.lex()))));
     }
-
     #[test]
-    fn test_parse_nest() {
-        let tokens = vec![
-            Token::Min,
-            Token::ParL,
-            Token::Num(0.0),
-            Token::Min,
-            Token::ParL,
-            Token::Num(5.0),
-            Token::Num(6.0),
-            Token::ParR,
-            Token::ParR,
-        ];
-        let res = Ast::Node(vec![Box::new(Ast::Leaf(0.0))], Fun::Min);
-        assert_eq!(res, parse(tokens));
+    fn test_min() {
+        let mut lexer = Lexer::new("min(5, 6)");
+        assert_eq!(5.0, eval(parse(lexer.lex())));
     }
-
     #[test]
-    fn test_lexparse() {
-        let mut lexer = Lexer::new("min(0.0, 5.0, 6.0)");
+    fn test_arithmetic() {
+        let mut lexer = Lexer::new("5+5-((6*12)/2)");
+        assert_eq!(-26.0, eval(parse(lispify(lexer.lex()))));
+    }
+    #[test]
+    fn test_min_plus() {
+        let mut lexer = Lexer::new("min(5, 6, 0+4, 10, 5, 1)");
         let lexed = lexer.lex();
-        assert_eq!(Ast::Empty, parse(lexed));
-    }
-    #[test]
-    fn test_sqrt() {
-        let mut lexer = Lexer::new("sqrt(5.5)");
-        let lexed = lexer.lex();
-        assert_eq!(Ast::Empty, parse(lexed));
+        println!("{:?}", lexed);
+        let lexd = lispify(lexed);
+        println!("{:?}", lexd);
+        println!("{:?}", parse(lexd.clone()));
+        assert_eq!(1.0, eval(parse(lexd)));
     }
 }
