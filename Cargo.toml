@@ -1,0 +1,7 @@
+[package]
+name = "kilac"
+version = "0.1.0"
+authors = ["Leo Lahti <leo.lahti1@gmail.com>"]
+
+[dependencies]
+tungstenite = "0.5.3"
