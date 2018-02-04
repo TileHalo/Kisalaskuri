@@ -2,6 +2,10 @@
 name = "kilac"
 version = "0.1.0"
 authors = ["Leo Lahti <leo.lahti1@gmail.com>"]
+license = "ISC"
+license-file = "LICENSE"
+description = "Handles Kipa-compatible inputs"
 
-[dependencies]
-tungstenite = "0.5.3"
+[lib]
+name = "kilac"
+path = "src/lib.rs"

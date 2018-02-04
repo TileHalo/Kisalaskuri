@@ -1,5 +1,15 @@
-use super::lexer::{Token, Lexer};
+use super::lexer::Token;
 macro_rules! recurse {
+    ($e:ident, $i:ident, $n:ident) => (
+        {
+            let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
+            $i = inp;
+            $n.push(Box::new(res));
+        }
+    )
+}
+
+macro_rules! infix_recurse {
     ($e:ident, $i:ident, $n:ident) => (
         {
             let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
@@ -50,11 +60,14 @@ pub enum Ast {
 fn parse_internal(mut input: Vec<Token>, cur: Fun) -> (Ast, Vec<Token>) {
     let mut nodes: Vec<Box<Ast>> = Vec::new();
     while let Some(token) = input.pop() {
+        // while let Some(token) = input.iter().cloned().peekable().next() {
         match token {
-            Token::Add => recurse!(Add, input, nodes),
-            Token::Sub => recurse!(Sub, input, nodes),
-            Token::Div => recurse!(Div, input, nodes),
-            Token::Mul => recurse!(Mul, input, nodes),
+            Token::Add => infix_recurse!(Add, input, nodes),
+            Token::Sub => infix_recurse!(Sub, input, nodes),
+            Token::Div => infix_recurse!(Div, input, nodes),
+            Token::Mul => infix_recurse!(Mul, input, nodes),
+            Token::Imod => infix_recurse!(Mod, input, nodes),
+            Token::Ipow => infix_recurse!(Pow, input, nodes),
             Token::Mod => recurse!(Mod, input, nodes),
             Token::Pow => recurse!(Pow, input, nodes),
             Token::Sum => recurse!(Sum, input, nodes),
@@ -129,6 +142,7 @@ pub fn parse(mut input: Vec<Token>) -> Ast {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::lexer::lex;
 
     #[test]
     fn test_parse_simple() {
@@ -176,8 +190,7 @@ mod tests {
 
     #[test]
     fn test_lexparse() {
-        let mut lexer = Lexer::new("min(0.0, 5.0, 6.0)");
-        let lexed = lexer.lex();
+        let lexed = lex("min(0.0, 5.0, 6.0)");
         assert_eq!(
             Ast::Node(
                 vec![
@@ -192,8 +205,7 @@ mod tests {
     }
     #[test]
     fn test_sqrt() {
-        let mut lexer = Lexer::new("sqrt(5.5)");
-        let lexed = lexer.lex();
+        let lexed = lex("sqrt(5.5)");
         assert_eq!(
             Ast::Node(vec![Box::new(Ast::Leaf(5.5))], Fun::Sqrt),
             parse(lexed)
@@ -201,13 +213,13 @@ mod tests {
     }
     #[test]
     fn test_add() {
-        let mut lexer = Lexer::new("+ 5 6");
+        let lexer = lex("+ 5 6");
         assert_eq!(
             Ast::Node(
                 vec![Box::new(Ast::Leaf(5.0)), Box::new(Ast::Leaf(6.0))],
                 Fun::Add,
             ),
-            parse(lexer.lex())
+            parse(lexer)
         );
     }
 }

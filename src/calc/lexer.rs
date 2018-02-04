@@ -1,4 +1,50 @@
 
+pub fn lex(s: &str) -> Vec<Token> {
+    let mut lexer = Lexer::new(s);
+    lexer.lex()
+}
+
+pub fn stringify(mut v: Vec<Token>) -> String {
+    let mut res = String::new();
+    while let Some(token) = v.pop() {
+        match token {
+            Token::Add => res.push('+'),
+            Token::Sub => res.push('-'),
+            Token::Div => res.push('/'),
+            Token::Mul => res.push('*'),
+            Token::Mod => res.push_str("mod"),
+            Token::Pow => res.push_str("pow"),
+            Token::Imod => res.push('%'),
+            Token::Ipow => res.push('^'),
+            Token::Aikavali => res.push_str("aikavali"),
+            Token::Abs => res.push_str("abs"),
+            Token::Log => res.push_str("log"),
+            Token::Ln => res.push_str("ln"),
+            Token::Floor => res.push_str("floor"),
+            Token::Ceil => res.push_str("ceil"),
+            Token::Sqrt => res.push_str("sqrt"),
+            Token::Exp => res.push_str("exp"),
+            Token::Interpoloi => res.push_str("interpoloi"),
+            Token::Min => res.push_str("min"),
+            Token::Max => res.push_str("max"),
+            Token::Sum => res.push_str("sum"),
+            Token::Med => res.push_str("med"),
+            Token::Kesk => res.push_str("kesk"),
+            Token::If => res.push_str("if"),
+            Token::SS => res.push_str("ss"),
+            Token::ParL => res.push('('),
+            Token::ParR => res.push(')'),
+            Token::BrackL => res.push('['),
+            Token::BrackR => res.push(']'),
+            Token::Comma => res.push(','),
+            Token::Expr(expr) => res.push_str(&expr),
+            Token::Num(num) => res.push_str(&num.to_string()),
+            Token::Empty => unimplemented!(),
+        }
+    }
+    res
+}
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Token {
     Add,
@@ -7,6 +53,8 @@ pub enum Token {
     Mul,
     Mod,
     Pow,
+    Imod,
+    Ipow,
     Aikavali,
     Abs,
     Log,
@@ -33,8 +81,9 @@ pub enum Token {
     Empty,
 }
 
+
 #[derive(Debug, Clone)]
-pub struct Lexer {
+struct Lexer {
     pos: usize,
     inp: String,
 }
@@ -49,9 +98,9 @@ impl Lexer {
     fn next_char(&self) -> char {
         self.inp[self.pos..].chars().next().unwrap()
     }
-    fn starts_with(&self, s: &str) -> bool {
-        self.inp[self.pos..].starts_with(s)
-    }
+    // fn starts_with(&self, s: &str) -> bool {
+    //     self.inp[self.pos..].starts_with(s)
+    // }
     fn eof(&self) -> bool {
         self.pos >= self.inp.len()
     }
@@ -150,11 +199,13 @@ impl Lexer {
                 }
                 '^' => {
                     self.consume_char();
-                    res.push(Token::Pow);
+                    res.push(Token::Ipow);
                 }
                 '%' => {
                     self.consume_char();
-                    res.push(Token::Mod);
+                    let tmp = res.pop().unwrap();
+                    res.push(Token::Imod);
+                    res.push(tmp);
                 }
                 ',' => {
                     self.consume_char();

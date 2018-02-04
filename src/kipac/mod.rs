@@ -1,6 +1,6 @@
 //! This module provides Kipa-compatible calculations.
 //! Kipa currently supports following functions:
-//! ```
+//! ```text
 //! aikavali(a, b)
 //! abs(x)
 //! log(x)
@@ -18,8 +18,10 @@
 //! med(x)
 //! kesk(x)
 //! ```
+//!
 //! Operators supported are
-//! ```
+//!
+//! ```text
 //! +
 //! -
 //! *
@@ -31,8 +33,10 @@
 //! <=
 //! >=
 //! ```
+//!
 //! And finally these examples are known to work
-//! ```
+//!
+//! ```text
 //! a+b+c (Sum)
 //! 1/a (inverse number)
 //! a (teams input)
@@ -46,7 +50,7 @@
 //! ..start.c.a.vartio (input a for team from subtask c from task start)
 //! ```
 //! In addition to these Kilac supports other operators too.
-use std::f64::consts::*;
+
 /// Function aikavali calculates the time difference between two inputs
 /// in seconds across two dates.
 pub fn aikavali(a: f64, b: f64) -> f64 {
@@ -133,16 +137,10 @@ fn sort(x: Vec<f64>) -> Vec<f64> {
     a.sort_by(|a, b| a.partial_cmp(b).unwrap());
     a
 }
-/// If result is smaller than zero, return zero.
-fn zero(x: f64) -> f64 {
-    if x < 0.0 {
-        return 0.0;
-    }
-    return x;
-}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::f64::consts::E;
     #[test]
     fn test_aikavali() {
         assert_eq!(5.0, aikavali(5.0, 10.0));
@@ -170,7 +168,7 @@ mod tests {
     #[test]
     fn test_ln() {
         assert_eq!(0.0, ln(1.0));
-        assert_eq!(1.0, ln(exp(1.0)));
+        assert_eq!(1.0, ln(E));
         assert_eq!(1.6094379124341003, ln(5.0));
     }
     #[test]
