@@ -2,7 +2,9 @@
 name = "kilac"
 version = "0.1.0"
 authors = ["Leo Lahti <leo.lahti1@gmail.com>"]
-license = "ISC"
+documentation = "https://docs.rs/kilac"
+repository = "https://github.com/TileHalo/Kisalaskuri"
+readme = "README.md"
 license-file = "LICENSE"
 description = "Handles Kipa-compatible inputs"
 
