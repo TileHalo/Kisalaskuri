@@ -6,4 +6,3 @@ use super::lexer::*;
 pub fn lispify(input: Vec<Token>) -> Vec<Token> {
     input
 }
-

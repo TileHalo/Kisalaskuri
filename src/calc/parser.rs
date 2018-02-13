@@ -1,23 +1,25 @@
 use super::lexer::Token;
-// macro_rules! recurse {
-//     ($e:ident, $i:ident, $n:ident) => (
-//         {
-//             let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
-//             $i = inp;
-//             $n.push(Box::new(res));
-//         }
-//     )
-// }
 
-// macro_rules! infix_recurse {
-//     ($e:ident, $i:ident, $n:ident) => (
-//         {
-//             let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
-//             $i = inp;
-//             $n.push(Box::new(res));
-//         }
-//     )
-// }
+macro_rules! arity {
+    ($e:expr, $b:expr) => (
+        match $e {
+            Fun::Add | Fun::Sub | Fun::Div | Fun::Mul | Fun::Mod | Fun::Pow => 2,
+            _ => $b.pop().unwrap()
+        };
+    )
+}
+
+macro_rules! children {
+    ($e:expr, $b:expr) => (
+        {
+            let mut v: Vec<Ast> = Vec::new();
+            for _ in 0..$e {
+                v.push($b.pop().unwrap())
+            }
+            v
+        };
+    )
+}
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Fun {
@@ -55,128 +57,117 @@ pub enum Ast {
     Get(String),
     Empty,
 }
+impl From<Token> for Fun {
+    fn from(token: Token) -> Self {
+        return match token {
+            Token::Abs => Fun::Abs,
+            Token::Add => Fun::Add,
+            Token::Aikavali => Fun::Aikavali,
+            Token::Ceil => Fun::Ceil,
+            Token::Div => Fun::Div,
+            Token::Exp => Fun::Exp,
+            Token::Floor => Fun::Floor,
+            Token::If => Fun::If,
+            Token::Imod | Token::Mod => Fun::Mod,
+            Token::Interpoloi => Fun::Interpoloi,
+            Token::Ipow | Token::Pow => Fun::Pow,
+            Token::Kesk => Fun::Kesk,
+            Token::Ln => Fun::Ln,
+            Token::Log => Fun::Log,
+            Token::Max => Fun::Max,
+            Token::Min => Fun::Min,
+            Token::Mul => Fun::Mul,
+            Token::Sqrt => Fun::Sqrt,
+            Token::Sub => Fun::Sub,
+            Token::Sum => Fun::Sum,
+            Token::SS => Fun::SS,
+            _ => Fun::Empty
+        };
+    }
+}
 
 /// We will use Shunting-Yard algorithm.
 /// Pseudocode:
-///
-/// ```text
-/// while there are tokens to be read:
-///     read a token.
-///     if the token is a number, then push it to the output queue.
-///     if the token is an operator, then:
-/// 	    while ((there is an operator at the top of the operator stack with
-/// 		    greater precedence) or (the operator at the top of the operator stack has
-///                 equal precedence and
-///                 the operator is left associative)) and
-///                 (the operator at the top of the stack is not a left bracket):
-/// 			pop operators from the operator stack, onto the output queue.
-/// 	push the read operator onto the operator stack.
-/// if the token is a left bracket (i.e. "("), then:
-/// 	push it onto the operator stack.
-/// if the token is a right bracket (i.e. ")"), then:
-/// 	while the operator at the top of the operator stack is not a left bracket:
-/// 		pop operators from the operator stack onto the output queue.
-/// 	pop the left bracket from the stack.
-/// 	/* if the stack runs out without finding a left bracket, then there are
-/// 	mismatched parentheses. */
-/// if there are no more tokens to read:
-/// while there are still operator tokens on the stack:
-/// 	/* if the operator token on the top of the stack is a bracket, then
-/// 	there are mismatched parentheses. */
-/// 	pop the operator onto the output queue.
-/// exit.
-/// ```
-///
-///with these modifications:
-///
-///```text
-/// The shunting yard algorithm can be used to build an AST.
-/// You need an additional stack of tree nodes (this is different from the operator stack),
-/// which is intially empty. When you would output an operand, you instead
-/// create a leaf node from it and push that onto the stack. Whenever you
-/// would output an operator, you create a node from it, then pop the two top
-/// operands from the output stack (or one if it's an unary operator), and add
-/// them as child nodes. Then you push the resulting tree to the output stack.
-///```
 pub fn parse(input: Vec<Token>) -> Ast {
     let mut opr: Vec<Token> = Vec::new();
     let mut node: Vec<Ast> = Vec::new();
-    let mut iter = input.iter().cloned();
+    let mut arity: Vec<usize> = Vec::new();
+    let mut iter = input.iter().cloned().peekable();
     while let Some(t) = iter.next() {
         match t {
             Token::Num(n) => node.push(Ast::Leaf(n)),
             Token::Expr(n) => node.push(Ast::Get(n)),
             Token::Empty => panic!("Got empty"),
-            Token::Comma => unimplemented!(),
-            Token::ParL => unimplemented!(),
-            Token::ParR => unimplemented!(),
+            Token::Comma => {
+                *arity.last_mut().unwrap() += 1; 
+            },
+            Token::ParL => {
+                opr.push(Token::ParL);
+            }
+            Token::ParR => {
+                while let Some(op) = opr.pop() {
+                    match op {
+                        Token::ParL => break,
+                        _ => {
+                            let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+                            let nod =
+                                Ast::Node(children!(ar, node), fun);
+                            node.push(nod);
+                        }
+                    }
+                }
+            }
             Token::BrackL => unimplemented!(),
             Token::BrackR => unimplemented!(),
             Token::Add | Token::Sub => {
-                while let Some(oper) = opr.pop() {
-                    match oper {
+                while let Some(op) = opr.pop() {
+                    match op {
+                        Token::ParL => {
+                            opr.push(Token::ParL);
+                            break;
+                        }
                         _ => {
-                            let fun = match oper {
-                                Token::Add => Fun::Add,
-                                Token::Sub => Fun::Sub,
-                                _ => panic!("wrong token {:#?}", oper)
-                            };
-                            let nod = Ast::Node(
-                                vec![node.pop().unwrap(), node.pop().unwrap()],
-                                fun,
-                            );
+                            let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+                            let nod =
+                                Ast::Node(children!(ar, node), fun);
                             node.push(nod);
                         }
                     }
                 }
                 opr.push(t.clone());
-            },
-            Token::Mul | Token::Div => {
-                while let Some(oper) = opr.pop() {
-                    match oper {
-                        Token::Add | Token::Sub => {
-                            opr.push(oper);
+            }
+            Token::Mul | Token::Div | Token::Imod => {
+                while let Some(op) = opr.pop() {
+                    match op {
+                        Token::Add | Token::Sub | Token::ParL => {
+                            opr.push(op);
                             break;
-                        },
+                        }
                         _ => {
-                            let fun = match oper {
-                                Token::Mul => Fun::Mul,
-                                Token::Div => Fun::Div,
-                                Token::Ipow => Fun::Pow,
-                                _ => panic!("wrong token {:#?}", oper)
-                            };
-                            let nod = Ast::Node(
-                                vec![node.pop().unwrap(), node.pop().unwrap()],
-                                fun
-                            );
+                            let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+                            let nod =
+                                Ast::Node(children!(ar, node), fun);
                             node.push(nod);
-
                         }
                     }
                 }
                 opr.push(t.clone());
             }
             Token::Ipow => opr.push(Token::Ipow),
-            _ => unimplemented!(),
+            _ => { opr.push(t.clone()); arity.push(1);},
         }
     }
-    println!("{:#?}", opr);
-    println!("{:#?}", node);
     while let Some(op) = opr.pop() {
-        let fun = match op{
-            Token::Add => Fun::Add,
-            Token::Sub => Fun::Sub,
-            Token::Mul => Fun::Mul,
-            Token::Div => Fun::Div,
-            Token::Ipow => Fun::Pow,
-            _ => panic!("Invalid operator: {:#?}", op)
-        };
-        let nod = Ast::Node(vec![node.pop().unwrap(), node.pop().unwrap()], fun);
+        let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+        let nod = Ast::Node(children!(ar, node), fun);
         node.push(nod);
     }
     return node.pop().unwrap();
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

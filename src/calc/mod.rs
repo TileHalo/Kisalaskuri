@@ -13,9 +13,7 @@ use self::parser::{Fun, Ast, parse};
 use super::kipac;
 
 pub fn calculate(s: String) -> f64 {
-    let p = parse(lisp::lispify(lex(&s)));
-    println!("{:#?}", p);
-    eval(p)
+    eval(parse(lisp::lispify(lex(&s))))
 
 }
 
@@ -37,7 +35,6 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Ceil => kipac::ceil(res[0]),
                 Fun::Sqrt => kipac::sqrt(res[0]),
                 Fun::Exp => kipac::exp(res[0]),
-                Fun::Mod => kipac::kmod(res[0], res[1]),
                 Fun::Pow => kipac::pow(res[0], res[1]),
                 Fun::Interpoloi => kipac::abs(res[0]),
                 Fun::Min => kipac::min(res),
@@ -48,7 +45,8 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Div => res[1] / res[0],
                 Fun::Mul => res[0] * res[1],
                 Fun::Sub => res[1] - res[0],
-                _ => unimplemented!("Function {:?}", fun),
+                Fun::Mod => res[1] % res[0],
+                _ => unimplemented!("Function {:#?}", fun),
             };
         }
         _ => unimplemented!("{:#?}", ast),
@@ -66,17 +64,36 @@ mod tests {
     }
     #[test]
     fn test_sub() {
-         let s = "12-2";
-         assert_eq!(10.0, calculate(s.into()));
+        let s = "12-2";
+        assert_eq!(10.0, calculate(s.into()));
     }
     #[test]
     fn test_div() {
-         let s = "12/2";
-         assert_eq!(6.0, calculate(s.into()));
+        let s = "12/2";
+        assert_eq!(6.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_mul() {
+        let s = "12*2";
+        assert_eq!(24.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_mod() {
+        let s = "12%2";
+        assert_eq!(0.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_pow() {
+        let s = "2^2";
+        assert_eq!(4.0, calculate(s.into()));
     }
     #[test]
     fn test_arithmetic() {
-         let s = "5+5 -6*12/2";
-         assert_eq!(-26.0, calculate(s.into()));
+        let s = "5+5 -6*12/2";
+        assert_eq!(-26.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_min() {
+        assert_eq!(2.0, calculate("min(5, 10, 2)".into()));
     }
 }
