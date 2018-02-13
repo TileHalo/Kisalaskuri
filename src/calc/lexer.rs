@@ -39,7 +39,7 @@ pub fn stringify(mut v: Vec<Token>) -> String {
             Token::Comma => res.push(','),
             Token::Expr(expr) => res.push_str(&expr),
             Token::Num(num) => res.push_str(&num.to_string()),
-            Token::Empty => unimplemented!(),
+            _ => unimplemented!(),
         }
     }
     res
@@ -57,6 +57,7 @@ pub enum Token {
     Ipow,
     Aikavali,
     Abs,
+    List,
     Log,
     Ln,
     Floor,
@@ -169,17 +170,14 @@ impl Lexer {
                     self.consume_char();
                     res.push(Token::ParL);
                 }
-                ')' => {
+                ')' | ']' => {
                     self.consume_char();
                     res.push(Token::ParR);
                 }
                 '[' => {
                     self.consume_char();
-                    res.push(Token::BrackL);
-                }
-                ']' => {
-                    self.consume_char();
-                    res.push(Token::BrackR);
+                    res.push(Token::List);
+                    res.push(Token::ParL);
                 }
                 '+' => {
                     self.consume_char();
@@ -241,7 +239,8 @@ mod tests {
             Token::ParL,
             Token::Max,
             Token::ParL,
-            Token::BrackL,
+            Token::List,
+            Token::ParL,
             Token::ParL,
             Token::Expr(String::from("a")),
             Token::Sub,
@@ -260,7 +259,7 @@ mod tests {
             Token::Num(0.0),
             Token::ParR,
             Token::ParR,
-            Token::BrackR,
+            Token::ParR,
             Token::ParR,
             Token::Comma,
             Token::Max,
@@ -293,5 +292,9 @@ mod tests {
         ];
         let mut lexer = Lexer::new(inp);
         assert_eq!(res, lexer.lex());
+    }
+    #[test]
+    fn lex_list() {
+        
     }
 }

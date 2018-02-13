@@ -81,6 +81,7 @@ impl From<Token> for Fun {
             Token::Sub => Fun::Sub,
             Token::Sum => Fun::Sum,
             Token::SS => Fun::SS,
+            Token::List => Fun::List,
             _ => Fun::Empty
         };
     }
