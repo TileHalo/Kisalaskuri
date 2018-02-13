@@ -1,4 +1,7 @@
 # Documentation for the parser
+## Type of parser
+This parser is a extended Shunting-Yard algorithm. Information used in construction of this parser
+can be found (here) [http://wcipeg.com/wiki/Shunting_yard_algorithm#Unary_operators]
 ## Pseudocode
 ```
 operator_stack = {}

@@ -50,8 +50,8 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Plus => res[0],
                 _ => unimplemented!("Function {:#?}", fun),
             };
-        }
-        _ => unimplemented!("{:#?}", ast),
+        },
+        Ast::Get(_) => panic!("Eval cannot handle Get: {:#?}", ast),
     };
 }
 
@@ -91,7 +91,7 @@ mod tests {
     }
     #[test]
     fn test_arithmetic() {
-        let s = "5+5 -6*12/2";
+        let s = "5+5-6*12/2";
         assert_eq!(-26.0, calculate(s.into()));
     }
     #[test]

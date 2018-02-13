@@ -196,4 +196,5 @@ pub fn parse(input: Vec<Token>) -> Ast {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+}
