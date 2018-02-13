@@ -11,3 +11,6 @@ description = "Handles Kipa-compatible inputs"
 [lib]
 name = "kilac"
 path = "src/lib.rs"
+
+[dev-dependencies]
+pretty_assertions = "0.5.0"

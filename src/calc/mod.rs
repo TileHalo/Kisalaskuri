@@ -14,6 +14,7 @@ use super::kipac;
 
 pub fn calculate(s: String) -> f64 {
     eval(parse(lisp::lispify(lex(&s))))
+
 }
 
 pub fn eval(ast: Ast) -> f64 {
@@ -23,7 +24,7 @@ pub fn eval(ast: Ast) -> f64 {
         Ast::Node(vec, fun) => {
             let mut res: Vec<f64> = Vec::new();
             for i in vec {
-                res.push(eval(i.as_ref().clone()));
+                res.push(eval(i.clone()));
             }
             return match fun {
                 Fun::Abs => kipac::abs(res[0]),
@@ -34,7 +35,6 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Ceil => kipac::ceil(res[0]),
                 Fun::Sqrt => kipac::sqrt(res[0]),
                 Fun::Exp => kipac::exp(res[0]),
-                Fun::Mod => kipac::kmod(res[0], res[1]),
                 Fun::Pow => kipac::pow(res[0], res[1]),
                 Fun::Interpoloi => kipac::abs(res[0]),
                 Fun::Min => kipac::min(res),
@@ -42,13 +42,16 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Sum | Fun::Add => kipac::sum(res),
                 Fun::Med => kipac::median(res),
                 Fun::Kesk => kipac::mean(res),
-                Fun::Div => res[0] / res[1],
+                Fun::Div => res[1] / res[0],
                 Fun::Mul => res[0] * res[1],
-                Fun::Sub => res[0] - res[1],
-                _ => unimplemented!("Function {:?}", fun),
+                Fun::Sub => res[1] - res[0],
+                Fun::Mod => res[1] % res[0],
+                Fun::Minus => -1.0*res[0],
+                Fun::Plus => res[0],
+                _ => unimplemented!("Function {:#?}", fun),
             };
-        }
-        _ => unimplemented!("{:?}", ast),
+        },
+        Ast::Get(_) => panic!("Eval cannot handle Get: {:#?}", ast),
     };
 }
 
@@ -62,9 +65,29 @@ mod tests {
         assert_eq!(11.0, calculate(s.into()));
     }
     #[test]
-    fn test_min() {
-        let s = "min(5, 6)";
-        assert_eq!(5.0, calculate(s.into()));
+    fn test_sub() {
+        let s = "12-2";
+        assert_eq!(10.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_div() {
+        let s = "12/2";
+        assert_eq!(6.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_mul() {
+        let s = "12*2";
+        assert_eq!(24.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_mod() {
+        let s = "12%2";
+        assert_eq!(0.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_pow() {
+        let s = "2^2";
+        assert_eq!(4.0, calculate(s.into()));
     }
     #[test]
     fn test_arithmetic() {
@@ -72,8 +95,11 @@ mod tests {
         assert_eq!(-26.0, calculate(s.into()));
     }
     #[test]
-    fn test_min_plus() {
-        let s = "min(5, 6, 0+4, 10, 5, 1)";
-        assert_eq!(1.0, calculate(s.into()));
+    fn test_min() {
+        assert_eq!(2.0, calculate("min(5, 10, 2)".into()));
+    }
+    #[test]
+    fn unary() {
+        assert_eq!(-10.0, calculate("-5*2".into()));
     }
 }

@@ -1,21 +1,24 @@
 use super::lexer::Token;
-macro_rules! recurse {
-    ($e:ident, $i:ident, $n:ident) => (
-        {
-            let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
-            $i = inp;
-            $n.push(Box::new(res));
-        }
+
+macro_rules! arity {
+    ($e:expr, $b:expr) => (
+        match $e {
+            Fun::Add | Fun::Sub | Fun::Div | Fun::Mul | Fun::Mod | Fun::Pow => 2,
+            Fun::Minus | Fun::Plus => 1,
+            _ => $b.pop().unwrap()
+        };
     )
 }
 
-macro_rules! infix_recurse {
-    ($e:ident, $i:ident, $n:ident) => (
+macro_rules! children {
+    ($e:expr, $b:expr) => (
         {
-            let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
-            $i = inp;
-            $n.push(Box::new(res));
-        }
+            let mut v: Vec<Ast> = Vec::new();
+            for _ in 0..$e {
+                v.push($b.pop().unwrap())
+            }
+            v
+        };
     )
 }
 
@@ -46,180 +49,152 @@ pub enum Fun {
     List,
     Pair,
     Empty,
+    Minus,
+    Plus,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Ast {
-    Node(Vec<Box<Ast>>, Fun),
+    Node(Vec<Ast>, Fun),
     Leaf(f64),
     Get(String),
     Empty,
 }
-
-
-fn parse_internal(mut input: Vec<Token>, cur: Fun) -> (Ast, Vec<Token>) {
-    let mut nodes: Vec<Box<Ast>> = Vec::new();
-    while let Some(token) = input.pop() {
-        // while let Some(token) = input.iter().cloned().peekable().next() {
-        match token {
-            Token::Add => infix_recurse!(Add, input, nodes),
-            Token::Sub => infix_recurse!(Sub, input, nodes),
-            Token::Div => infix_recurse!(Div, input, nodes),
-            Token::Mul => infix_recurse!(Mul, input, nodes),
-            Token::Imod => infix_recurse!(Mod, input, nodes),
-            Token::Ipow => infix_recurse!(Pow, input, nodes),
-            Token::Mod => recurse!(Mod, input, nodes),
-            Token::Pow => recurse!(Pow, input, nodes),
-            Token::Sum => recurse!(Sum, input, nodes),
-            Token::Aikavali => recurse!(Aikavali, input, nodes),
-            Token::Abs => recurse!(Abs, input, nodes),
-            Token::Log => recurse!(Log, input, nodes),
-            Token::Ln => recurse!(Ln, input, nodes),
-            Token::Floor => recurse!(Floor, input, nodes),
-            Token::Ceil => recurse!(Ceil, input, nodes),
-            Token::Sqrt => recurse!(Sqrt, input, nodes),
-            Token::Exp => recurse!(Exp, input, nodes),
-            Token::Interpoloi => recurse!(Interpoloi, input, nodes),
-            Token::Min => recurse!(Min, input, nodes),
-            Token::Max => recurse!(Max, input, nodes),
-            Token::Med => recurse!(Med, input, nodes),
-            Token::Kesk => recurse!(Kesk, input, nodes),
-            Token::If => recurse!(If, input, nodes),
-            Token::SS => unimplemented!(),
-            Token::ParL => (),
-            Token::ParR => return (Ast::Node(nodes, cur), input),
-            Token::BrackL => recurse!(List, input, nodes),
-            Token::BrackR => return (Ast::Node(nodes, cur), input),
-            Token::Comma => {
-                match cur {
-                    Fun::Add | Fun::Sub | Fun::Div | Fun::Mul | Fun::Mod | Fun::Pow => {
-                        return (Ast::Node(nodes, cur), input)
-                    }
-                    _ => (),
-                }
-            }
-            Token::Num(num) => nodes.push(Box::new(Ast::Leaf(num))),
-            Token::Expr(expr) => nodes.push(Box::new(Ast::Get(expr))),
-            _ => panic!("Shiet"),
-        }
+impl From<Token> for Fun {
+    fn from(token: Token) -> Self {
+        return match token {
+            Token::Abs => Fun::Abs,
+            Token::Add => Fun::Add,
+            Token::Aikavali => Fun::Aikavali,
+            Token::Ceil => Fun::Ceil,
+            Token::Div => Fun::Div,
+            Token::Exp => Fun::Exp,
+            Token::Floor => Fun::Floor,
+            Token::If => Fun::If,
+            Token::Imod | Token::Mod => Fun::Mod,
+            Token::Interpoloi => Fun::Interpoloi,
+            Token::Ipow | Token::Pow => Fun::Pow,
+            Token::Kesk => Fun::Kesk,
+            Token::Ln => Fun::Ln,
+            Token::Log => Fun::Log,
+            Token::Max => Fun::Max,
+            Token::Min => Fun::Min,
+            Token::Mul => Fun::Mul,
+            Token::Sqrt => Fun::Sqrt,
+            Token::Sub => Fun::Sub,
+            Token::Sum => Fun::Sum,
+            Token::SS => Fun::SS,
+            Token::List => Fun::List,
+            Token::Plus => Fun::Plus,
+            Token::Minus => Fun::Minus,
+            _ => Fun::Empty
+        };
     }
-    return (Ast::Node(nodes, cur), input);
 }
 
-pub fn parse(mut input: Vec<Token>) -> Ast {
-    input.reverse();
-    let mut cur = Fun::Empty;
-    match input.pop().unwrap() {
-        Token::Add => cur = Fun::Add,
-        Token::Sub => cur = Fun::Sub,
-        Token::Sum => cur = Fun::Sum,
-        Token::Div => cur = Fun::Div,
-        Token::Mul => cur = Fun::Mul,
-        Token::Mod => cur = Fun::Mod,
-        Token::Pow => cur = Fun::Pow,
-        Token::Aikavali => cur = Fun::Aikavali,
-        Token::Abs => cur = Fun::Abs,
-        Token::Log => cur = Fun::Log,
-        Token::Ln => cur = Fun::Ln,
-        Token::Floor => cur = Fun::Floor,
-        Token::Ceil => cur = Fun::Ceil,
-        Token::Sqrt => cur = Fun::Sqrt,
-        Token::Exp => cur = Fun::Exp,
-        Token::Interpoloi => cur = Fun::Interpoloi,
-        Token::Min => cur = Fun::Min,
-        Token::Max => cur = Fun::Max,
-        Token::Med => cur = Fun::Med,
-        Token::Kesk => cur = Fun::Kesk,
-        Token::If => cur = Fun::If,
-        Token::SS => unimplemented!(),
-        Token::Num(num) => input.push(Token::Num(num)),
-        Token::Expr(expr) => input.push(Token::Expr(expr)),
-        _ => panic!("Shiet"),
+/// We will use Shunting-Yard algorithm.
+/// Pseudocode:
+pub fn parse(input: Vec<Token>) -> Ast {
+    let mut prev: Vec<Token> = Vec::new();
+    let mut opr: Vec<Token> = Vec::new();
+    let mut node: Vec<Ast> = Vec::new();
+    let mut arity: Vec<usize> = Vec::new();
+    let mut iter = input.iter().cloned().peekable();
+    while let Some(t) = iter.next() {
+        match t.clone() {
+            Token::Num(n) => node.push(Ast::Leaf(n)),
+            Token::Expr(n) => node.push(Ast::Get(n)),
+            Token::Empty => panic!("Got empty"),
+            Token::Comma => {
+                *arity.last_mut().unwrap() += 1; 
+            },
+            Token::ParL => {
+                opr.push(Token::ParL);
+            }
+            Token::ParR => {
+                while let Some(op) = opr.pop() {
+                    match op {
+                        Token::ParL => break,
+                        _ => {
+                            let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+                            let nod =
+                                Ast::Node(children!(ar, node), fun);
+                            node.push(nod);
+                        }
+                    }
+                }
+            }
+            Token::BrackL => unimplemented!(),
+            Token::BrackR => unimplemented!(),
+            Token::Add | Token::Sub => {
+                match prev.last() {
+                    Some(pre) => {
+                        match pre.clone() {
+                            Token::ParR | Token::Num(_) | Token::Expr(_) => {
+                                while let Some(op) = opr.pop() {
+                                    match op {
+                                        Token::ParL => {
+                                            opr.push(Token::ParL);
+                                            break;
+                                        }
+                                        _ => {
+                                            let fun = Fun::from(op);
+                                            let ar = arity!(fun, arity);
+                                            let nod =
+                                                Ast::Node(children!(ar, node), fun);
+                                            node.push(nod);
+                                        }
+                                    }
+                                }
+                                opr.push(t.clone());
+                            },
+                            _ => opr.push(match t {
+                                Token::Add => Token::Plus,
+                                Token::Sub => Token::Minus,
+                                _ => panic!("Shouldn't happen. Unary operator")
+                            })
+                        }
+                    },
+                    None => opr.push(match t {
+                                Token::Add => Token::Plus,
+                                Token::Sub => Token::Minus,
+                                _ => panic!("Shouldn't happen. Unary operator")
+                            })
+                }
+            }
+            Token::Mul | Token::Div | Token::Imod => {
+                while let Some(op) = opr.pop() {
+                    match op {
+                        Token::Add | Token::Sub | Token::ParL => {
+                            opr.push(op);
+                            break;
+                        }
+                        _ => {
+                            let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+                            let nod =
+                                Ast::Node(children!(ar, node), fun);
+                            node.push(nod);
+                        }
+                    }
+                }
+                opr.push(t.clone());
+            }
+            Token::Ipow => opr.push(Token::Ipow),
+            _ => { opr.push(t.clone()); arity.push(1);},
+        }
+        prev.push(t.clone());
     }
-    parse_internal(input, cur).0
+    while let Some(op) = opr.pop() {
+        let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+        let nod = Ast::Node(children!(ar, node), fun);
+        node.push(nod);
+    }
+    return node.pop().unwrap();
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use super::super::lexer::lex;
-
-    #[test]
-    fn test_parse_simple() {
-        let tokens = vec![
-            Token::Min,
-            Token::ParL,
-            Token::Num(0.0),
-            Token::Num(5.0),
-            Token::ParR,
-        ];
-        let ast = Ast::Node(
-            vec![Box::new(Ast::Leaf(0.0)), Box::new(Ast::Leaf(5.0))],
-            Fun::Min,
-        );
-        assert_eq!(ast, parse(tokens));
-    }
-
-    #[test]
-    fn test_parse_nest() {
-        // min(0.0, min(5, 6))
-        let tokens = vec![
-            Token::Min,
-            Token::ParL,
-            Token::Num(0.0),
-            Token::Min,
-            Token::ParL,
-            Token::Num(5.0),
-            Token::Num(6.0),
-            Token::ParR,
-            Token::ParR,
-            Token::ParR,
-        ];
-        let res = Ast::Node(
-            vec![
-                Box::new(Ast::Leaf(0.0)),
-                Box::new(Ast::Node(
-                    vec![Box::new(Ast::Leaf(5.0)), Box::new(Ast::Leaf(6.0))],
-                    Fun::Min,
-                )),
-            ],
-            Fun::Min,
-        );
-        assert_eq!(res, parse(tokens));
-    }
-
-    #[test]
-    fn test_lexparse() {
-        let lexed = lex("min(0.0, 5.0, 6.0)");
-        assert_eq!(
-            Ast::Node(
-                vec![
-                    Box::new(Ast::Leaf(0.0)),
-                    Box::new(Ast::Leaf(5.0)),
-                    Box::new(Ast::Leaf(6.0)),
-                ],
-                Fun::Min,
-            ),
-            parse(lexed)
-        );
-    }
-    #[test]
-    fn test_sqrt() {
-        let lexed = lex("sqrt(5.5)");
-        assert_eq!(
-            Ast::Node(vec![Box::new(Ast::Leaf(5.5))], Fun::Sqrt),
-            parse(lexed)
-        );
-    }
-    #[test]
-    fn test_add() {
-        let lexer = lex("+ 5 6");
-        assert_eq!(
-            Ast::Node(
-                vec![Box::new(Ast::Leaf(5.0)), Box::new(Ast::Leaf(6.0))],
-                Fun::Add,
-            ),
-            parse(lexer)
-        );
-    }
 }
