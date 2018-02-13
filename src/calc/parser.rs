@@ -4,6 +4,7 @@ macro_rules! arity {
     ($e:expr, $b:expr) => (
         match $e {
             Fun::Add | Fun::Sub | Fun::Div | Fun::Mul | Fun::Mod | Fun::Pow => 2,
+            Fun::Minus | Fun::Plus => 1,
             _ => $b.pop().unwrap()
         };
     )
@@ -48,6 +49,8 @@ pub enum Fun {
     List,
     Pair,
     Empty,
+    Minus,
+    Plus,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -82,6 +85,8 @@ impl From<Token> for Fun {
             Token::Sum => Fun::Sum,
             Token::SS => Fun::SS,
             Token::List => Fun::List,
+            Token::Plus => Fun::Plus,
+            Token::Minus => Fun::Minus,
             _ => Fun::Empty
         };
     }
@@ -90,12 +95,13 @@ impl From<Token> for Fun {
 /// We will use Shunting-Yard algorithm.
 /// Pseudocode:
 pub fn parse(input: Vec<Token>) -> Ast {
+    let mut prev: Vec<Token> = Vec::new();
     let mut opr: Vec<Token> = Vec::new();
     let mut node: Vec<Ast> = Vec::new();
     let mut arity: Vec<usize> = Vec::new();
     let mut iter = input.iter().cloned().peekable();
     while let Some(t) = iter.next() {
-        match t {
+        match t.clone() {
             Token::Num(n) => node.push(Ast::Leaf(n)),
             Token::Expr(n) => node.push(Ast::Get(n)),
             Token::Empty => panic!("Got empty"),
@@ -122,22 +128,40 @@ pub fn parse(input: Vec<Token>) -> Ast {
             Token::BrackL => unimplemented!(),
             Token::BrackR => unimplemented!(),
             Token::Add | Token::Sub => {
-                while let Some(op) = opr.pop() {
-                    match op {
-                        Token::ParL => {
-                            opr.push(Token::ParL);
-                            break;
+                match prev.last() {
+                    Some(pre) => {
+                        match pre.clone() {
+                            Token::ParR | Token::Num(_) | Token::Expr(_) => {
+                                while let Some(op) = opr.pop() {
+                                    match op {
+                                        Token::ParL => {
+                                            opr.push(Token::ParL);
+                                            break;
+                                        }
+                                        _ => {
+                                            let fun = Fun::from(op);
+                                            let ar = arity!(fun, arity);
+                                            let nod =
+                                                Ast::Node(children!(ar, node), fun);
+                                            node.push(nod);
+                                        }
+                                    }
+                                }
+                                opr.push(t.clone());
+                            },
+                            _ => opr.push(match t {
+                                Token::Add => Token::Plus,
+                                Token::Sub => Token::Minus,
+                                _ => panic!("Shouldn't happen. Unary operator")
+                            })
                         }
-                        _ => {
-                            let fun = Fun::from(op);
-                            let ar = arity!(fun, arity);
-                            let nod =
-                                Ast::Node(children!(ar, node), fun);
-                            node.push(nod);
-                        }
-                    }
+                    },
+                    None => opr.push(match t {
+                                Token::Add => Token::Plus,
+                                Token::Sub => Token::Minus,
+                                _ => panic!("Shouldn't happen. Unary operator")
+                            })
                 }
-                opr.push(t.clone());
             }
             Token::Mul | Token::Div | Token::Imod => {
                 while let Some(op) = opr.pop() {
@@ -160,6 +184,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
             Token::Ipow => opr.push(Token::Ipow),
             _ => { opr.push(t.clone()); arity.push(1);},
         }
+        prev.push(t.clone());
     }
     while let Some(op) = opr.pop() {
         let fun = Fun::from(op);

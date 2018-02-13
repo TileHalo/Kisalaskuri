@@ -46,6 +46,8 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Mul => res[0] * res[1],
                 Fun::Sub => res[1] - res[0],
                 Fun::Mod => res[1] % res[0],
+                Fun::Minus => -1.0*res[0],
+                Fun::Plus => res[0],
                 _ => unimplemented!("Function {:#?}", fun),
             };
         }
@@ -95,5 +97,9 @@ mod tests {
     #[test]
     fn test_min() {
         assert_eq!(2.0, calculate("min(5, 10, 2)".into()));
+    }
+    #[test]
+    fn unary() {
+        assert_eq!(-10.0, calculate("-5*2".into()));
     }
 }

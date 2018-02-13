@@ -80,6 +80,8 @@ pub enum Token {
     Expr(String),
     Num(f64),
     Empty,
+    Plus,
+    Minus,
 }
 
 
