@@ -13,7 +13,10 @@ use self::parser::{Fun, Ast, parse};
 use super::kipac;
 
 pub fn calculate(s: String) -> f64 {
-    eval(parse(lisp::lispify(lex(&s))))
+    let p = parse(lisp::lispify(lex(&s)));
+    println!("{:#?}", p);
+    eval(p)
+
 }
 
 pub fn eval(ast: Ast) -> f64 {
@@ -23,7 +26,7 @@ pub fn eval(ast: Ast) -> f64 {
         Ast::Node(vec, fun) => {
             let mut res: Vec<f64> = Vec::new();
             for i in vec {
-                res.push(eval(i.as_ref().clone()));
+                res.push(eval(i.clone()));
             }
             return match fun {
                 Fun::Abs => kipac::abs(res[0]),
@@ -42,13 +45,13 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Sum | Fun::Add => kipac::sum(res),
                 Fun::Med => kipac::median(res),
                 Fun::Kesk => kipac::mean(res),
-                Fun::Div => res[0] / res[1],
+                Fun::Div => res[1] / res[0],
                 Fun::Mul => res[0] * res[1],
-                Fun::Sub => res[0] - res[1],
+                Fun::Sub => res[1] - res[0],
                 _ => unimplemented!("Function {:?}", fun),
             };
         }
-        _ => unimplemented!("{:?}", ast),
+        _ => unimplemented!("{:#?}", ast),
     };
 }
 
@@ -62,18 +65,18 @@ mod tests {
         assert_eq!(11.0, calculate(s.into()));
     }
     #[test]
-    fn test_min() {
-        let s = "min(5, 6)";
-        assert_eq!(5.0, calculate(s.into()));
+    fn test_sub() {
+         let s = "12-2";
+         assert_eq!(10.0, calculate(s.into()));
+    }
+    #[test]
+    fn test_div() {
+         let s = "12/2";
+         assert_eq!(6.0, calculate(s.into()));
     }
     #[test]
     fn test_arithmetic() {
-        let s = "5+5-6*12/2";
-        assert_eq!(-26.0, calculate(s.into()));
-    }
-    #[test]
-    fn test_min_plus() {
-        let s = "min(5, 6, 0+4, 10, 5, 1)";
-        assert_eq!(1.0, calculate(s.into()));
+         let s = "5+5 -6*12/2";
+         assert_eq!(-26.0, calculate(s.into()));
     }
 }

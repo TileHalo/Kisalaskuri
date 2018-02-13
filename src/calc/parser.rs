@@ -1,23 +1,23 @@
 use super::lexer::Token;
-macro_rules! recurse {
-    ($e:ident, $i:ident, $n:ident) => (
-        {
-            let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
-            $i = inp;
-            $n.push(Box::new(res));
-        }
-    )
-}
+// macro_rules! recurse {
+//     ($e:ident, $i:ident, $n:ident) => (
+//         {
+//             let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
+//             $i = inp;
+//             $n.push(Box::new(res));
+//         }
+//     )
+// }
 
-macro_rules! infix_recurse {
-    ($e:ident, $i:ident, $n:ident) => (
-        {
-            let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
-            $i = inp;
-            $n.push(Box::new(res));
-        }
-    )
-}
+// macro_rules! infix_recurse {
+//     ($e:ident, $i:ident, $n:ident) => (
+//         {
+//             let (res, mut inp) = parse_internal($i.clone(), Fun::$e);
+//             $i = inp;
+//             $n.push(Box::new(res));
+//         }
+//     )
+// }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Fun {
@@ -50,176 +50,133 @@ pub enum Fun {
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Ast {
-    Node(Vec<Box<Ast>>, Fun),
+    Node(Vec<Ast>, Fun),
     Leaf(f64),
     Get(String),
     Empty,
 }
 
-
-fn parse_internal(mut input: Vec<Token>, cur: Fun) -> (Ast, Vec<Token>) {
-    let mut nodes: Vec<Box<Ast>> = Vec::new();
-    while let Some(token) = input.pop() {
-        // while let Some(token) = input.iter().cloned().peekable().next() {
-        match token {
-            Token::Add => infix_recurse!(Add, input, nodes),
-            Token::Sub => infix_recurse!(Sub, input, nodes),
-            Token::Div => infix_recurse!(Div, input, nodes),
-            Token::Mul => infix_recurse!(Mul, input, nodes),
-            Token::Imod => infix_recurse!(Mod, input, nodes),
-            Token::Ipow => infix_recurse!(Pow, input, nodes),
-            Token::Mod => recurse!(Mod, input, nodes),
-            Token::Pow => recurse!(Pow, input, nodes),
-            Token::Sum => recurse!(Sum, input, nodes),
-            Token::Aikavali => recurse!(Aikavali, input, nodes),
-            Token::Abs => recurse!(Abs, input, nodes),
-            Token::Log => recurse!(Log, input, nodes),
-            Token::Ln => recurse!(Ln, input, nodes),
-            Token::Floor => recurse!(Floor, input, nodes),
-            Token::Ceil => recurse!(Ceil, input, nodes),
-            Token::Sqrt => recurse!(Sqrt, input, nodes),
-            Token::Exp => recurse!(Exp, input, nodes),
-            Token::Interpoloi => recurse!(Interpoloi, input, nodes),
-            Token::Min => recurse!(Min, input, nodes),
-            Token::Max => recurse!(Max, input, nodes),
-            Token::Med => recurse!(Med, input, nodes),
-            Token::Kesk => recurse!(Kesk, input, nodes),
-            Token::If => recurse!(If, input, nodes),
-            Token::SS => unimplemented!(),
-            Token::ParL => (),
-            Token::ParR => return (Ast::Node(nodes, cur), input),
-            Token::BrackL => recurse!(List, input, nodes),
-            Token::BrackR => return (Ast::Node(nodes, cur), input),
-            Token::Comma => {
-                match cur {
-                    Fun::Add | Fun::Sub | Fun::Div | Fun::Mul | Fun::Mod | Fun::Pow => {
-                        return (Ast::Node(nodes, cur), input)
+/// We will use Shunting-Yard algorithm.
+/// Pseudocode:
+///
+/// ```text
+/// while there are tokens to be read:
+///     read a token.
+///     if the token is a number, then push it to the output queue.
+///     if the token is an operator, then:
+/// 	    while ((there is an operator at the top of the operator stack with
+/// 		    greater precedence) or (the operator at the top of the operator stack has
+///                 equal precedence and
+///                 the operator is left associative)) and
+///                 (the operator at the top of the stack is not a left bracket):
+/// 			pop operators from the operator stack, onto the output queue.
+/// 	push the read operator onto the operator stack.
+/// if the token is a left bracket (i.e. "("), then:
+/// 	push it onto the operator stack.
+/// if the token is a right bracket (i.e. ")"), then:
+/// 	while the operator at the top of the operator stack is not a left bracket:
+/// 		pop operators from the operator stack onto the output queue.
+/// 	pop the left bracket from the stack.
+/// 	/* if the stack runs out without finding a left bracket, then there are
+/// 	mismatched parentheses. */
+/// if there are no more tokens to read:
+/// while there are still operator tokens on the stack:
+/// 	/* if the operator token on the top of the stack is a bracket, then
+/// 	there are mismatched parentheses. */
+/// 	pop the operator onto the output queue.
+/// exit.
+/// ```
+///
+///with these modifications:
+///
+///```text
+/// The shunting yard algorithm can be used to build an AST.
+/// You need an additional stack of tree nodes (this is different from the operator stack),
+/// which is intially empty. When you would output an operand, you instead
+/// create a leaf node from it and push that onto the stack. Whenever you
+/// would output an operator, you create a node from it, then pop the two top
+/// operands from the output stack (or one if it's an unary operator), and add
+/// them as child nodes. Then you push the resulting tree to the output stack.
+///```
+pub fn parse(input: Vec<Token>) -> Ast {
+    let mut opr: Vec<Token> = Vec::new();
+    let mut node: Vec<Ast> = Vec::new();
+    let mut iter = input.iter().cloned();
+    while let Some(t) = iter.next() {
+        match t {
+            Token::Num(n) => node.push(Ast::Leaf(n)),
+            Token::Expr(n) => node.push(Ast::Get(n)),
+            Token::Empty => panic!("Got empty"),
+            Token::Comma => unimplemented!(),
+            Token::ParL => unimplemented!(),
+            Token::ParR => unimplemented!(),
+            Token::BrackL => unimplemented!(),
+            Token::BrackR => unimplemented!(),
+            Token::Add | Token::Sub => {
+                while let Some(oper) = opr.pop() {
+                    match oper {
+                        _ => {
+                            let fun = match oper {
+                                Token::Add => Fun::Add,
+                                Token::Sub => Fun::Sub,
+                                _ => panic!("wrong token {:#?}", oper)
+                            };
+                            let nod = Ast::Node(
+                                vec![node.pop().unwrap(), node.pop().unwrap()],
+                                fun,
+                            );
+                            node.push(nod);
+                        }
                     }
-                    _ => (),
                 }
+                opr.push(t.clone());
+            },
+            Token::Mul | Token::Div => {
+                while let Some(oper) = opr.pop() {
+                    match oper {
+                        Token::Add | Token::Sub => {
+                            opr.push(oper);
+                            break;
+                        },
+                        _ => {
+                            let fun = match oper {
+                                Token::Mul => Fun::Mul,
+                                Token::Div => Fun::Div,
+                                Token::Ipow => Fun::Pow,
+                                _ => panic!("wrong token {:#?}", oper)
+                            };
+                            let nod = Ast::Node(
+                                vec![node.pop().unwrap(), node.pop().unwrap()],
+                                fun
+                            );
+                            node.push(nod);
+
+                        }
+                    }
+                }
+                opr.push(t.clone());
             }
-            Token::Num(num) => nodes.push(Box::new(Ast::Leaf(num))),
-            Token::Expr(expr) => nodes.push(Box::new(Ast::Get(expr))),
-            _ => panic!("Shiet"),
+            Token::Ipow => opr.push(Token::Ipow),
+            _ => unimplemented!(),
         }
     }
-    return (Ast::Node(nodes, cur), input);
-}
-
-pub fn parse(mut input: Vec<Token>) -> Ast {
-    input.reverse();
-    let mut cur = Fun::Empty;
-    match input.pop().unwrap() {
-        Token::Add => cur = Fun::Add,
-        Token::Sub => cur = Fun::Sub,
-        Token::Sum => cur = Fun::Sum,
-        Token::Div => cur = Fun::Div,
-        Token::Mul => cur = Fun::Mul,
-        Token::Mod => cur = Fun::Mod,
-        Token::Pow => cur = Fun::Pow,
-        Token::Aikavali => cur = Fun::Aikavali,
-        Token::Abs => cur = Fun::Abs,
-        Token::Log => cur = Fun::Log,
-        Token::Ln => cur = Fun::Ln,
-        Token::Floor => cur = Fun::Floor,
-        Token::Ceil => cur = Fun::Ceil,
-        Token::Sqrt => cur = Fun::Sqrt,
-        Token::Exp => cur = Fun::Exp,
-        Token::Interpoloi => cur = Fun::Interpoloi,
-        Token::Min => cur = Fun::Min,
-        Token::Max => cur = Fun::Max,
-        Token::Med => cur = Fun::Med,
-        Token::Kesk => cur = Fun::Kesk,
-        Token::If => cur = Fun::If,
-        Token::SS => unimplemented!(),
-        Token::Num(num) => input.push(Token::Num(num)),
-        Token::Expr(expr) => input.push(Token::Expr(expr)),
-        _ => panic!("Shiet"),
+    println!("{:#?}", opr);
+    println!("{:#?}", node);
+    while let Some(op) = opr.pop() {
+        let fun = match op{
+            Token::Add => Fun::Add,
+            Token::Sub => Fun::Sub,
+            Token::Mul => Fun::Mul,
+            Token::Div => Fun::Div,
+            Token::Ipow => Fun::Pow,
+            _ => panic!("Invalid operator: {:#?}", op)
+        };
+        let nod = Ast::Node(vec![node.pop().unwrap(), node.pop().unwrap()], fun);
+        node.push(nod);
     }
-    parse_internal(input, cur).0
+    return node.pop().unwrap();
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use super::super::lexer::lex;
-
-    #[test]
-    fn test_parse_simple() {
-        let tokens = vec![
-            Token::Min,
-            Token::ParL,
-            Token::Num(0.0),
-            Token::Num(5.0),
-            Token::ParR,
-        ];
-        let ast = Ast::Node(
-            vec![Box::new(Ast::Leaf(0.0)), Box::new(Ast::Leaf(5.0))],
-            Fun::Min,
-        );
-        assert_eq!(ast, parse(tokens));
-    }
-
-    #[test]
-    fn test_parse_nest() {
-        // min(0.0, min(5, 6))
-        let tokens = vec![
-            Token::Min,
-            Token::ParL,
-            Token::Num(0.0),
-            Token::Min,
-            Token::ParL,
-            Token::Num(5.0),
-            Token::Num(6.0),
-            Token::ParR,
-            Token::ParR,
-            Token::ParR,
-        ];
-        let res = Ast::Node(
-            vec![
-                Box::new(Ast::Leaf(0.0)),
-                Box::new(Ast::Node(
-                    vec![Box::new(Ast::Leaf(5.0)), Box::new(Ast::Leaf(6.0))],
-                    Fun::Min,
-                )),
-            ],
-            Fun::Min,
-        );
-        assert_eq!(res, parse(tokens));
-    }
-
-    #[test]
-    fn test_lexparse() {
-        let lexed = lex("min(0.0, 5.0, 6.0)");
-        assert_eq!(
-            Ast::Node(
-                vec![
-                    Box::new(Ast::Leaf(0.0)),
-                    Box::new(Ast::Leaf(5.0)),
-                    Box::new(Ast::Leaf(6.0)),
-                ],
-                Fun::Min,
-            ),
-            parse(lexed)
-        );
-    }
-    #[test]
-    fn test_sqrt() {
-        let lexed = lex("sqrt(5.5)");
-        assert_eq!(
-            Ast::Node(vec![Box::new(Ast::Leaf(5.5))], Fun::Sqrt),
-            parse(lexed)
-        );
-    }
-    #[test]
-    fn test_add() {
-        let lexer = lex("+ 5 6");
-        assert_eq!(
-            Ast::Node(
-                vec![Box::new(Ast::Leaf(5.0)), Box::new(Ast::Leaf(6.0))],
-                Fun::Add,
-            ),
-            parse(lexer)
-        );
-    }
 }
