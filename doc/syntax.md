@@ -44,5 +44,6 @@ Tämän lisäksi Kila tulee tukemaan myös seuraavia funktioita ja operaattoreit
 * arcsin(x)
 * arccos(x)
 * arctan(x)
-* interp(x, syotteet, max, min, cond)
 * aikainterp(x, max, yli)
+* pi
+* neper

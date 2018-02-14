@@ -12,6 +12,16 @@ use self::lexer::lex;
 use self::parser::{Fun, Ast, parse};
 use super::kipac;
 
+macro_rules! cond {
+    ($e:expr) => (
+        if $e {
+            1.0
+        } else {
+            0.0
+        };
+    )
+}
+
 pub fn calculate(s: String) -> f64 {
     eval(parse(lisp::lispify(lex(&s))))
 
@@ -36,18 +46,33 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Sqrt => kipac::sqrt(res[0]),
                 Fun::Exp => kipac::exp(res[0]),
                 Fun::Pow => kipac::pow(res[0], res[1]),
-                Fun::Interpoloi => kipac::abs(res[0]),
+                Fun::Interpoloi => kipac::interpoloi(res[0], res[1], res[2], res[3], 0.0),
+                Fun::Aikainterp => kipac::interpoloi(res[0], res[1], res[1]+res[2], res[2], 0.0),
                 Fun::Min => kipac::min(res),
                 Fun::Max => kipac::max(res),
                 Fun::Sum | Fun::Add => kipac::sum(res),
                 Fun::Med => kipac::median(res),
                 Fun::Kesk => kipac::mean(res),
+                Fun::Logb => kipac::ln(res[0])/kipac::ln(res[1]),
                 Fun::Div => res[1] / res[0],
                 Fun::Mul => res[0] * res[1],
                 Fun::Sub => res[1] - res[0],
                 Fun::Mod => res[1] % res[0],
                 Fun::Minus => -1.0*res[0],
                 Fun::Plus => res[0],
+                Fun::Eq => cond!(res[1] == res[0]),
+                Fun::Neq => cond!(res[1] != res[0]),
+                Fun::Ge => cond!(res[1] <= res[0]),
+                Fun::Gt => cond!(res[1] <  res[0]),
+                Fun::Le => cond!(res[1] >= res[0]),
+                Fun::Lt => cond!(res[1] > res[0]),
+                Fun::If => res.clone()[res[0] as usize+1],
+                Fun::Sin => f64::sin(res[0]),
+                Fun::Cos => f64::cos(res[0]),
+                Fun::Tan => f64::tan(res[0]),
+                Fun::Arcsin => f64::asin(res[0]),
+                Fun::Arccos => f64::acos(res[0]),
+                Fun::Arctan => f64::atan(res[0]),
                 _ => unimplemented!("Function {:#?}", fun),
             };
         },

@@ -4,6 +4,11 @@ macro_rules! arity {
     ($e:expr, $b:expr) => (
         match $e {
             Fun::Add | Fun::Sub | Fun::Div | Fun::Mul | Fun::Mod | Fun::Pow => 2,
+            Fun::Eq | Fun::Neq | Fun::Ge | Fun::Gt | Fun::Le | Fun::Lt => 2,
+            Fun::Aikavali | Fun::Logb => 2,
+            Fun::Log | Fun::Ln | Fun::Floor | Fun::Ceil | Fun::Sqrt | Fun::Exp => 1,
+            Fun::Sin | Fun::Cos | Fun::Tan | Fun::Arcsin | Fun::Arccos | Fun::Arctan => 1,
+            Fun::If | Fun::Aikainterp => 3,
             Fun::Minus | Fun::Plus => 1,
             _ => $b.pop().unwrap()
         };
@@ -28,6 +33,15 @@ pub enum Fun {
     Sub,
     Div,
     Mul,
+    Sin,
+    Cos,
+    Tan,
+    Arcsin,
+    Arccos,
+    Arctan,
+    Logb,
+    Interp,
+    Aikainterp,
     Mod,
     Pow,
     Aikavali,
@@ -48,6 +62,12 @@ pub enum Fun {
     SS,
     List,
     Pair,
+    Eq,
+    Neq,
+    Lt,
+    Le,
+    Gt,
+    Ge,
     Empty,
     Minus,
     Plus,
@@ -65,28 +85,42 @@ impl From<Token> for Fun {
         return match token {
             Token::Abs => Fun::Abs,
             Token::Add => Fun::Add,
+            Token::Aikainterp => Fun::Aikainterp,
             Token::Aikavali => Fun::Aikavali,
+            Token::Arccos => Fun::Arccos,
+            Token::Arcsin => Fun::Arcsin,
+            Token::Arctan => Fun::Arctan,
             Token::Ceil => Fun::Ceil,
+            Token::Cos => Fun::Cos,
             Token::Div => Fun::Div,
+            Token::Eq => Fun::Eq,
             Token::Exp => Fun::Exp,
             Token::Floor => Fun::Floor,
+            Token::Ge => Fun::Ge,
+            Token::Gt => Fun::Gt,
             Token::If => Fun::If,
             Token::Imod | Token::Mod => Fun::Mod,
             Token::Interpoloi => Fun::Interpoloi,
             Token::Ipow | Token::Pow => Fun::Pow,
             Token::Kesk => Fun::Kesk,
+            Token::Le => Fun::Le,
+            Token::List => Fun::List,
             Token::Ln => Fun::Ln,
             Token::Log => Fun::Log,
+            Token::Logb => Fun::Logb,
+            Token::Lt => Fun::Lt,
             Token::Max => Fun::Max,
             Token::Min => Fun::Min,
+            Token::Minus => Fun::Minus,
             Token::Mul => Fun::Mul,
+            Token::Neq => Fun::Neq,
+            Token::Plus => Fun::Plus,
+            Token::SS => Fun::SS,
+            Token::Sin => Fun::Sin,
             Token::Sqrt => Fun::Sqrt,
             Token::Sub => Fun::Sub,
             Token::Sum => Fun::Sum,
-            Token::SS => Fun::SS,
-            Token::List => Fun::List,
-            Token::Plus => Fun::Plus,
-            Token::Minus => Fun::Minus,
+            Token::Tan => Fun::Cos,
             _ => Fun::Empty
         };
     }
@@ -124,10 +158,8 @@ pub fn parse(input: Vec<Token>) -> Ast {
                         }
                     }
                 }
-            }
-            Token::BrackL => unimplemented!(),
-            Token::BrackR => unimplemented!(),
-            Token::Add | Token::Sub => {
+            },
+            Token::Eq | Token::Neq | Token::Gt | Token::Ge | Token::Lt | Token::Le | Token::Add | Token::Sub  => {
                 match prev.last() {
                     Some(pre) => {
                         match pre.clone() {
@@ -191,6 +223,9 @@ pub fn parse(input: Vec<Token>) -> Ast {
                             let ar = arity!(fun, arity);
         let nod = Ast::Node(children!(ar, node), fun);
         node.push(nod);
+    }
+    if node.len() > 1 {
+        panic!("Too many members: {:#?}", node);
     }
     return node.pop().unwrap();
 }

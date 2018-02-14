@@ -1,5 +1,6 @@
 //! This module provides Kipa-compatible calculations.
 //! Kipa currently supports following functions:
+//!
 //! ```text
 //! aikavali(a, b)
 //! abs(x)
@@ -12,11 +13,12 @@
 //! mod(x, y)
 //! pow(x,y)
 //! interpoloi(x,x1,y1,x2,(y2=0))
-//! min(x)
-//! max(x)
-//! sum(x)
-//! med(x)
-//! kesk(x)
+//! min(X)
+//! max(X)
+//! sum(X)
+//! med(X)
+//! kesk(X)
+//! if(cond, true, false)
 //! ```
 //!
 //! Operators supported are
@@ -42,7 +44,7 @@
 //! a (teams input)
 //! .a (all series inputs)
 //! .a.vartio (input of a team)
-//! min(.a) (all minimums of all series inputs)
+//! min(.a) (minimum of all series inputs)
 //! muk and ..mukana (all inputs of teams that belong to competition)
 //! max(.a*muk) (maximum of all teams that are in the competition)
 //! vartio (teams number)
@@ -97,7 +99,7 @@ pub fn pow(a: f64, b: f64) -> f64 {
     a.powf(b)
 }
 #[allow(unused_variables)]
-/// Raw interpolation. Shouldn't be used in kila-forms.
+/// Raw interpolation.
 pub fn interpoloi(x: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
     y1 * (x - x2) / (x1 - x2)
 }

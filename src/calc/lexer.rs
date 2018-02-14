@@ -1,4 +1,4 @@
-
+use std::f64::consts::{E, PI};
 pub fn lex(s: &str) -> Vec<Token> {
     let mut lexer = Lexer::new(s);
     lexer.lex()
@@ -68,6 +68,15 @@ pub enum Token {
     Min,
     Max,
     Sum,
+    Sin,
+    Cos,
+    Tan,
+    Arcsin,
+    Arccos,
+    Arctan,
+    Logb,
+    Interp,
+    Aikainterp,
     Med,
     Kesk,
     If,
@@ -77,6 +86,12 @@ pub enum Token {
     BrackL,
     BrackR,
     Comma,
+    Eq,
+    Neq,
+    Lt,
+    Le,
+    Gt,
+    Ge,
     Expr(String),
     Num(f64),
     Empty,
@@ -101,9 +116,6 @@ impl Lexer {
     fn next_char(&self) -> char {
         self.inp[self.pos..].chars().next().unwrap()
     }
-    // fn starts_with(&self, s: &str) -> bool {
-    //     self.inp[self.pos..].starts_with(s)
-    // }
     fn eof(&self) -> bool {
         self.pos >= self.inp.len()
     }
@@ -132,7 +144,8 @@ impl Lexer {
     }
 
     fn get_expr(&mut self) -> String {
-        self.consume_while(|c| c.is_alphanumeric() || c == '.')
+        self.consume_while(|c| c.is_alphanumeric() || c == '.' || c == '=' || c == '>' || c == '<'
+                           || c == '!')
     }
 
     fn parse_expr(&mut self, expr: &str) -> Token {
@@ -150,10 +163,28 @@ impl Lexer {
             "interpoloi" => Token::Interpoloi,
             "min" | "pienin" => Token::Min,
             "max" | "suurin" => Token::Max,
+            "if" => Token::If,
             "sum" => Token::Sum,
+            "sin" => Token::Sin,
+            "neper" => Token::Num(E),
+            "pi" => Token::Num(PI),
+            "cos" => Token::Cos,
+            "tan" => Token::Tan,
+            "arcsin" => Token::Arcsin,
+            "arccos" => Token::Arccos,
+            "arctan" => Token::Arctan,
+            "aikainterp" => Token::Aikainterp,
+            "logb" => Token::Logb,
+            "interp" => Token::Interp,
             "med" => Token::Med,
             "kesk" | "mean" => Token::Kesk,
             "ss" => Token::SS,
+            "==" => Token::Eq,
+            "!=" => Token::Neq,
+            ">=" => Token::Ge,
+            "<=" => Token::Le,
+            ">" => Token::Lt,
+            "<" => Token::Gt,
             _ => {
                 let num = expr.parse::<f64>();
                 match num {
