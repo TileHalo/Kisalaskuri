@@ -103,7 +103,7 @@ pub fn pow(a: f64, b: f64) -> f64 {
 pub fn interpoloi(x: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
     y1 * (x - x2) / (x1 - x2)
 }
-/// Returns maximum value of f64 vector.
+/// Returns minimum value of f64 vector.
 pub fn min(x: Vec<f64>) -> f64 {
     x.iter().cloned().fold(0. / 0., f64::min)
 }
@@ -148,11 +148,6 @@ mod tests {
         assert_eq!(5.0, aikavali(5.0, 10.0));
         assert_eq!(0.0, aikavali(10.0, 10.0));
         assert_eq!(100.0, aikavali(86400.0, 100.0));
-    }
-    #[test]
-    #[should_panic]
-    fn test_aikavali_n() {
-        assert!(aikavali(8533.0, 15.0) < 0.2)
     }
     #[test]
     fn test_abs() {

@@ -8,8 +8,8 @@ fn main() {
     let mut eva = String::new();
     while let Ok(_) = io::stdin().read_line(&mut eva) {
         let lexed = calc::lexer::lex(&eva.clone().trim());
-        let lisped = calc::lisp::lispify(lexed);
-        let ast = calc::parser::parse(lisped);
+        let ast = calc::parser::parse(lexed);
+        println!("AST: {:#?}", ast);
         println!("Result: {}", calc::eval(ast));
         eva = String::new();
     }

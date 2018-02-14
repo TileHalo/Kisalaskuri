@@ -141,6 +141,18 @@ pub fn parse(input: Vec<Token>) -> Ast {
             Token::Empty => panic!("Got empty"),
             Token::Comma => {
                 *arity.last_mut().unwrap() += 1; 
+                while let Some(op) = opr.pop() {
+                    match op {
+                        Token::ParL => {opr.push(op.clone());break;},
+                        _ => {
+                            let fun = Fun::from(op);
+                            let ar = arity!(fun, arity);
+                            let nod =
+                                Ast::Node(children!(ar, node), fun);
+                            node.push(nod);
+                        }
+                    }
+                }
             },
             Token::ParL => {
                 opr.push(Token::ParL);

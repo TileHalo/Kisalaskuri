@@ -12,5 +12,10 @@ description = "Handles Kipa-compatible inputs"
 name = "kilac"
 path = "src/lib.rs"
 
+[[bench]]
+name = "kilac"
+harness = false
+
 [dev-dependencies]
 pretty_assertions = "0.5.0"
+criterion = "0.2.0"

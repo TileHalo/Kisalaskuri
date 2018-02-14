@@ -45,7 +45,7 @@ pub fn eval(ast: Ast) -> f64 {
                 Fun::Ceil => kipac::ceil(res[0]),
                 Fun::Sqrt => kipac::sqrt(res[0]),
                 Fun::Exp => kipac::exp(res[0]),
-                Fun::Pow => kipac::pow(res[0], res[1]),
+                Fun::Pow => kipac::pow(res[1], res[0]),
                 Fun::Interpoloi => kipac::interpoloi(res[0], res[1], res[2], res[3], 0.0),
                 Fun::Aikainterp => kipac::interpoloi(res[0], res[1], res[1]+res[2], res[2], 0.0),
                 Fun::Min => kipac::min(res),
@@ -122,6 +122,7 @@ mod tests {
     #[test]
     fn test_min() {
         assert_eq!(2.0, calculate("min(5, 10, 2)".into()));
+        assert_eq!(-10.0, calculate("min(5, -10, 2)".into()));
     }
     #[test]
     fn unary() {
