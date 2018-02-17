@@ -327,7 +327,5 @@ mod tests {
         assert_eq!(res, lexer.lex());
     }
     #[test]
-    fn lex_list() {
-        
-    }
+    fn lex_list() {}
 }

@@ -22,7 +22,7 @@ macro_rules! children {
             for _ in 0..$e {
                 v.push($b.pop().unwrap())
             }
-            v
+            v.iter().rev().cloned().collect::<Vec<Ast>>()
         };
     )
 }
@@ -127,7 +127,6 @@ impl From<Token> for Fun {
 }
 
 /// We will use Shunting-Yard algorithm.
-/// Pseudocode:
 pub fn parse(input: Vec<Token>) -> Ast {
     let mut prev: Vec<Token> = Vec::new();
     let mut opr: Vec<Token> = Vec::new();
@@ -154,9 +153,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
                     }
                 }
             },
-            Token::ParL => {
-                opr.push(Token::ParL);
-            }
+            Token::ParL => opr.push(Token::ParL),
             Token::ParR => {
                 while let Some(op) = opr.pop() {
                     match op {
@@ -164,8 +161,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
                         _ => {
                             let fun = Fun::from(op);
                             let ar = arity!(fun, arity);
-                            let nod =
-                                Ast::Node(children!(ar, node), fun);
+                            let nod = Ast::Node(children!(ar, node), fun);
                             node.push(nod);
                         }
                     }
@@ -185,26 +181,29 @@ pub fn parse(input: Vec<Token>) -> Ast {
                                         _ => {
                                             let fun = Fun::from(op);
                                             let ar = arity!(fun, arity);
-                                            let nod =
-                                                Ast::Node(children!(ar, node), fun);
+                                            let nod = Ast::Node(children!(ar, node), fun);
                                             node.push(nod);
                                         }
                                     }
                                 }
                                 opr.push(t.clone());
-                            },
-                            _ => opr.push(match t {
-                                Token::Add => Token::Plus,
-                                Token::Sub => Token::Minus,
-                                _ => panic!("Shouldn't happen. Unary operator")
-                            })
+                            }
+                            _ => {
+                                opr.push(match t {
+                                    Token::Add => Token::Plus,
+                                    Token::Sub => Token::Minus,
+                                    _ => panic!("Shouldn't happen. Unary operator"),
+                                })
+                            }
                         }
-                    },
-                    None => opr.push(match t {
-                                Token::Add => Token::Plus,
-                                Token::Sub => Token::Minus,
-                                _ => panic!("Shouldn't happen. Unary operator")
-                            })
+                    }
+                    None => {
+                        opr.push(match t {
+                            Token::Add => Token::Plus,
+                            Token::Sub => Token::Minus,
+                            _ => panic!("Shouldn't happen. Unary operator"),
+                        })
+                    }
                 }
             }
             Token::Mul | Token::Div | Token::Imod => {
@@ -217,8 +216,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
                         _ => {
                             let fun = Fun::from(op);
                             let ar = arity!(fun, arity);
-                            let nod =
-                                Ast::Node(children!(ar, node), fun);
+                            let nod = Ast::Node(children!(ar, node), fun);
                             node.push(nod);
                         }
                     }
@@ -226,13 +224,16 @@ pub fn parse(input: Vec<Token>) -> Ast {
                 opr.push(t.clone());
             }
             Token::Ipow => opr.push(Token::Ipow),
-            _ => { opr.push(t.clone()); arity.push(1);},
+            _ => {
+                opr.push(t.clone());
+                arity.push(1);
+            }
         }
         prev.push(t.clone());
     }
     while let Some(op) = opr.pop() {
         let fun = Fun::from(op);
-                            let ar = arity!(fun, arity);
+        let ar = arity!(fun, arity);
         let nod = Ast::Node(children!(ar, node), fun);
         node.push(nod);
     }
@@ -243,5 +244,4 @@ pub fn parse(input: Vec<Token>) -> Ast {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}
