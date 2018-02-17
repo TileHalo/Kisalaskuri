@@ -9,8 +9,10 @@ fn main() {
     while let Ok(_) = io::stdin().read_line(&mut eva) {
         let lexed = calc::lexer::lex(&eva.clone().trim());
         let ast = calc::parser::parse(lexed).ok().unwrap();
-        println!("AST: {:#?}", ast);
-        println!("Result: {}", calc::eval(ast).ok().unwrap());
+        match calc::eval(ast).ok().unwrap() {
+            kilac::calc::Value::Num(n) => println!("{}", n),
+            kilac::calc::Value::Vec(n) => println!("{:?}", n)
+        }
         eva = String::new();
     }
 }

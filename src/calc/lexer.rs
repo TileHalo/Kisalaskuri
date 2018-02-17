@@ -103,8 +103,9 @@ impl Lexer {
     }
 
     fn get_expr(&mut self) -> String {
-        self.consume_while(|c| c.is_alphanumeric() || c == '.' || c == '=' || c == '>' || c == '<'
-                           || c == '!')
+        self.consume_while(|c| {
+            c.is_alphanumeric() || c == '.' || c == '=' || c == '>' || c == '<' || c == '!'
+        })
     }
 
     fn parse_expr(&mut self, expr: &str) -> Token {

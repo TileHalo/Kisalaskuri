@@ -1,3 +1,4 @@
+pub mod applicators;
 use super::lexer::Token;
 
 macro_rules! arity {
@@ -27,7 +28,7 @@ macro_rules! children {
     )
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum Fun {
     Add,
     Sub,
@@ -121,13 +122,25 @@ impl From<Token> for Fun {
             Token::Sub => Fun::Sub,
             Token::Sum => Fun::Sum,
             Token::Tan => Fun::Cos,
-            _ => Fun::Empty
+            _ => Fun::Empty,
         };
     }
 }
 
-/// We will use Shunting-Yard algorithm.
+
 pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
+    parse_fn(input, applicators::basic, super::ctx::EmptyCtx)
+}
+
+/// We will use Shunting-Yard algorithm.
+pub fn parse_fn<F, C: super::ctx::KilaCtx + Clone>(
+    input: Vec<Token>,
+    app: F,
+    ctx: C,
+) -> Result<Ast, String>
+where
+    F: Fn(Vec<Ast>, Fun, C) -> Ast,
+{
     let mut prev: Vec<Token> = Vec::new();
     let mut opr: Vec<Token> = Vec::new();
     let mut node: Vec<Ast> = Vec::new();
@@ -139,20 +152,22 @@ pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
             Token::Expr(n) => node.push(Ast::Get(n)),
             Token::Empty => return Err(format!("Got empty")),
             Token::Comma => {
-                *arity.last_mut().unwrap() += 1; 
+                *arity.last_mut().unwrap() += 1;
                 while let Some(op) = opr.pop() {
                     match op {
-                        Token::ParL => {opr.push(op.clone());break;},
+                        Token::ParL => {
+                            opr.push(op.clone());
+                            break;
+                        }
                         _ => {
                             let fun = Fun::from(op);
                             let ar = arity!(fun, arity);
-                            let nod =
-                                Ast::Node(children!(ar, node), fun);
+                            let nod = app(children!(ar, node), fun, ctx.clone());
                             node.push(nod);
                         }
                     }
                 }
-            },
+            }
             Token::ParL => opr.push(Token::ParL),
             Token::ParR => {
                 while let Some(op) = opr.pop() {
@@ -161,13 +176,14 @@ pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
                         _ => {
                             let fun = Fun::from(op);
                             let ar = arity!(fun, arity);
-                            let nod = Ast::Node(children!(ar, node), fun);
+                            let nod = app(children!(ar, node), fun, ctx.clone());
                             node.push(nod);
                         }
                     }
                 }
-            },
-            Token::Eq | Token::Neq | Token::Gt | Token::Ge | Token::Lt | Token::Le | Token::Add | Token::Sub  => {
+            }
+            Token::Eq | Token::Neq | Token::Gt | Token::Ge | Token::Lt | Token::Le |
+            Token::Add | Token::Sub => {
                 match prev.last() {
                     Some(pre) => {
                         match pre.clone() {
@@ -181,7 +197,7 @@ pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
                                         _ => {
                                             let fun = Fun::from(op);
                                             let ar = arity!(fun, arity);
-                                            let nod = Ast::Node(children!(ar, node), fun);
+                                            let nod = app(children!(ar, node), fun, ctx.clone());
                                             node.push(nod);
                                         }
                                     }
@@ -216,7 +232,7 @@ pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
                         _ => {
                             let fun = Fun::from(op);
                             let ar = arity!(fun, arity);
-                            let nod = Ast::Node(children!(ar, node), fun);
+                            let nod = app(children!(ar, node), fun, ctx.clone());
                             node.push(nod);
                         }
                     }
@@ -234,7 +250,7 @@ pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
     while let Some(op) = opr.pop() {
         let fun = Fun::from(op);
         let ar = arity!(fun, arity);
-        let nod = Ast::Node(children!(ar, node), fun);
+        let nod = app(children!(ar, node), fun, ctx.clone());
         node.push(nod);
     }
     if node.len() > 1 {
