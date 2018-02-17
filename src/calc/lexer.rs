@@ -4,47 +4,6 @@ pub fn lex(s: &str) -> Vec<Token> {
     lexer.lex()
 }
 
-pub fn stringify(mut v: Vec<Token>) -> String {
-    let mut res = String::new();
-    while let Some(token) = v.pop() {
-        match token {
-            Token::Add => res.push('+'),
-            Token::Sub => res.push('-'),
-            Token::Div => res.push('/'),
-            Token::Mul => res.push('*'),
-            Token::Mod => res.push_str("mod"),
-            Token::Pow => res.push_str("pow"),
-            Token::Imod => res.push('%'),
-            Token::Ipow => res.push('^'),
-            Token::Aikavali => res.push_str("aikavali"),
-            Token::Abs => res.push_str("abs"),
-            Token::Log => res.push_str("log"),
-            Token::Ln => res.push_str("ln"),
-            Token::Floor => res.push_str("floor"),
-            Token::Ceil => res.push_str("ceil"),
-            Token::Sqrt => res.push_str("sqrt"),
-            Token::Exp => res.push_str("exp"),
-            Token::Interpoloi => res.push_str("interpoloi"),
-            Token::Min => res.push_str("min"),
-            Token::Max => res.push_str("max"),
-            Token::Sum => res.push_str("sum"),
-            Token::Med => res.push_str("med"),
-            Token::Kesk => res.push_str("kesk"),
-            Token::If => res.push_str("if"),
-            Token::SS => res.push_str("ss"),
-            Token::ParL => res.push('('),
-            Token::ParR => res.push(')'),
-            Token::BrackL => res.push('['),
-            Token::BrackR => res.push(']'),
-            Token::Comma => res.push(','),
-            Token::Expr(expr) => res.push_str(&expr),
-            Token::Num(num) => res.push_str(&num.to_string()),
-            _ => unimplemented!(),
-        }
-    }
-    res
-}
-
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Token {
     Add,
@@ -326,6 +285,4 @@ mod tests {
         let mut lexer = Lexer::new(inp);
         assert_eq!(res, lexer.lex());
     }
-    #[test]
-    fn lex_list() {}
 }

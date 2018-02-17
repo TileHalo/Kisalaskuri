@@ -1,11 +1,9 @@
 //! This module does all the calculations.
-//!
 //! For Kila-only calculation operations, please consult submodule kilac.
 //! For Kipa-compatible calculation operations, please consult module kipac.
 
 pub mod kilac;
 pub mod lexer;
-pub mod lisp;
 pub mod parser;
 
 use self::lexer::lex;
@@ -14,67 +12,75 @@ use super::kipac;
 
 macro_rules! cond {
     ($e:expr) => (
-        if $e {
+        Ok(if $e {
             1.0
         } else {
             0.0
-        };
+        });
     )
 }
 
-pub fn calculate(s: String) -> f64 {
-    eval(parse(lisp::lispify(lex(&s))))
+pub fn calculate_err(s: String) -> Result<f64, String> {
+    let parsed = try!(parse(lex(&s)));
+    eval(parsed)
 
 }
 
-pub fn eval(ast: Ast) -> f64 {
+pub fn calculate(s: String) -> f64 {
+    let parsed = parse(lex(&s)).ok().unwrap();
+    eval(parsed).ok().unwrap()
+
+}
+
+pub fn eval(ast: Ast) -> Result<f64, String> {
     return match ast {
         Ast::Empty => panic!("Met empty abstract syntax tree node {:?}", ast),
-        Ast::Leaf(num) => num,
+        Ast::Leaf(num) => Ok(num),
         Ast::Node(vec, fun) => {
             let mut res: Vec<f64> = Vec::new();
             for i in vec {
-                res.push(eval(i.clone()));
+                let evald = try!(eval(i.clone()));
+                res.push(evald);
             }
-            return match fun {
-                Fun::Abs => kipac::abs(res[0]),
-                Fun::Log => kipac::log(res[0]),
-                Fun::Aikavali => kipac::aikavali(res[0], res[1]),
-                Fun::Ln => kipac::ln(res[0]),
-                Fun::Floor => kipac::floor(res[0]),
-                Fun::Ceil => kipac::ceil(res[0]),
-                Fun::Sqrt => kipac::sqrt(res[0]),
-                Fun::Exp => kipac::exp(res[0]),
-                Fun::Pow => kipac::pow(res[0], res[1]),
-                Fun::Interpoloi => kipac::interpoloi(res[0], res[1], res[2], res[3], 0.0),
-                Fun::Aikainterp => kipac::interpoloi(res[0], res[1], res[1]+res[2], res[2], 0.0),
-                Fun::Min => kipac::min(res),
-                Fun::Max => kipac::max(res),
-                Fun::Sum | Fun::Add => kipac::sum(res),
-                Fun::Med => kipac::median(res),
-                Fun::Kesk => kipac::mean(res),
-                Fun::Logb => kipac::ln(res[1])/kipac::ln(res[0]),
-                Fun::Div => res[0] / res[1],
-                Fun::Mul => res[0] * res[1],
-                Fun::Sub => res[0] - res[1],
-                Fun::Mod => res[0] % res[1],
-                Fun::Minus => -1.0 * res[0],
-                Fun::Plus => res[0],
+            match fun {
+                Fun::Abs => Ok(kipac::abs(res[0])),
+                Fun::Log => Ok(kipac::log(res[0])),
+                Fun::Aikavali => Ok(kipac::aikavali(res[0], res[1])),
+                Fun::Ln => Ok(kipac::ln(res[0])),
+                Fun::Floor => Ok(kipac::floor(res[0])),
+                Fun::Ceil => Ok(kipac::ceil(res[0])),
+                Fun::Sqrt => Ok(kipac::sqrt(res[0])),
+                Fun::Exp => Ok(kipac::exp(res[0])),
+                Fun::Pow => Ok(kipac::pow(res[0], res[1])),
+                Fun::Interpoloi => Ok(kipac::interpoloi(res[0], res[1], res[2], res[3], 0.0)),
+                Fun::Aikainterp => Ok(kipac::interpoloi(res[0], res[1], res[1]+res[2], res[2], 0.0)),
+                Fun::Min => Ok(kipac::min(res)),
+                Fun::Max => Ok(kipac::max(res)),
+                Fun::Sum | Fun::Add => Ok(kipac::sum(res)),
+                Fun::Med => Ok(kipac::median(res)),
+                Fun::Kesk => Ok(kipac::mean(res)),
+                Fun::Logb => Ok(kipac::ln(res[1])/kipac::ln(res[0])),
+                Fun::Div => Ok(res[0] / res[1]),
+                Fun::Mul => Ok(res[0] * res[1]),
+                Fun::Sub => Ok(res[0] - res[1]),
+                Fun::Mod => Ok(res[0] % res[1]),
+                Fun::Minus => Ok(-1.0 * res[0]),
+                Fun::Plus => Ok(res[0]),
                 Fun::Eq => cond!(res[0] == res[1]),
                 Fun::Neq => cond!(res[0] != res[1]),
                 Fun::Ge => cond!(res[0] <= res[1]),
                 Fun::Gt => cond!(res[0] <  res[1]),
                 Fun::Le => cond!(res[0] >= res[1]),
                 Fun::Lt => cond!(res[0] > res[1]),
-                Fun::If => res.clone()[res[0] as usize+1],
-                Fun::Sin => f64::sin(res[0]),
-                Fun::Cos => f64::cos(res[0]),
-                Fun::Tan => f64::tan(res[0]),
-                Fun::Arcsin => f64::asin(res[0]),
-                Fun::Arccos => f64::acos(res[0]),
-                Fun::Arctan => f64::atan(res[0]),
-                _ => unimplemented!("Function {:#?}", fun),
-            };
+                Fun::If => Ok(res.clone()[res[0] as usize+1]),
+                Fun::Sin => Ok(f64::sin(res[0])),
+                Fun::Cos => Ok(f64::cos(res[0])),
+                Fun::Tan => Ok(f64::tan(res[0])),
+                Fun::Arcsin => Ok(f64::asin(res[0])),
+                Fun::Arccos => Ok(f64::acos(res[0])),
+                Fun::Arctan => Ok(f64::atan(res[0])),
+                _ => Err(format!("Function {:#?}", fun)),
+            }
         }
         Ast::Get(_) => panic!("Eval cannot handle Get: {:#?}", ast),
     };

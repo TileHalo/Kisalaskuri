@@ -8,9 +8,9 @@ fn main() {
     let mut eva = String::new();
     while let Ok(_) = io::stdin().read_line(&mut eva) {
         let lexed = calc::lexer::lex(&eva.clone().trim());
-        let ast = calc::parser::parse(lexed);
+        let ast = calc::parser::parse(lexed).ok().unwrap();
         println!("AST: {:#?}", ast);
-        println!("Result: {}", calc::eval(ast));
+        println!("Result: {}", calc::eval(ast).ok().unwrap());
         eva = String::new();
     }
 }

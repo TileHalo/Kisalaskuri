@@ -127,7 +127,7 @@ impl From<Token> for Fun {
 }
 
 /// We will use Shunting-Yard algorithm.
-pub fn parse(input: Vec<Token>) -> Ast {
+pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
     let mut prev: Vec<Token> = Vec::new();
     let mut opr: Vec<Token> = Vec::new();
     let mut node: Vec<Ast> = Vec::new();
@@ -137,7 +137,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
         match t.clone() {
             Token::Num(n) => node.push(Ast::Leaf(n)),
             Token::Expr(n) => node.push(Ast::Get(n)),
-            Token::Empty => panic!("Got empty"),
+            Token::Empty => return Err(format!("Got empty")),
             Token::Comma => {
                 *arity.last_mut().unwrap() += 1; 
                 while let Some(op) = opr.pop() {
@@ -192,7 +192,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
                                 opr.push(match t {
                                     Token::Add => Token::Plus,
                                     Token::Sub => Token::Minus,
-                                    _ => panic!("Shouldn't happen. Unary operator"),
+                                    _ => return Err(format!("Shouldn't happen. Unary operator")),
                                 })
                             }
                         }
@@ -201,7 +201,7 @@ pub fn parse(input: Vec<Token>) -> Ast {
                         opr.push(match t {
                             Token::Add => Token::Plus,
                             Token::Sub => Token::Minus,
-                            _ => panic!("Shouldn't happen. Unary operator"),
+                            _ => return Err(format!("Shouldn't happen. Unary operator")),
                         })
                     }
                 }
@@ -238,9 +238,9 @@ pub fn parse(input: Vec<Token>) -> Ast {
         node.push(nod);
     }
     if node.len() > 1 {
-        panic!("Too many members: {:#?}", node);
+        return Err(format!("Too many members: {:#?}", node));
     }
-    return node.pop().unwrap();
+    return Ok(node.pop().unwrap());
 }
 
 #[cfg(test)]
