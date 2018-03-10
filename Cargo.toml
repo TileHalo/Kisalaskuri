@@ -6,7 +6,7 @@ documentation = "https://docs.rs/kilac"
 repository = "https://github.com/TileHalo/Kisalaskuri"
 readme = "README.md"
 license-file = "LICENSE"
-description = "Handles Kipa-compatible inputs"
+description = "Handles Kipa-compatible inputs. Prototype of Riipic"
 
 [lib]
 name = "kilac"

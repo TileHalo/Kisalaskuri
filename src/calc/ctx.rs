@@ -2,7 +2,7 @@
 //! context and other things.
 
 use super::parser::Ast;
-
+/// Empty object so that bunch of simpler internals can be implemented
 #[derive(Debug, Clone)]
 pub struct EmptyCtx;
 
@@ -10,12 +10,12 @@ pub struct EmptyCtx;
 /// that corresponds to the type of getter.
 /// Thus either List or Leaf is returned.
 /// Can also return empty, which signals for empty getter.
-pub trait KilaCtx {
-    fn get(String) -> Result<Ast, ()>;
+pub trait KilaCtx: Clone {
+    fn get(&self, String) -> Result<Ast, ()>;
 }
 
 impl KilaCtx for EmptyCtx {
-    fn get(_: String) -> Result<Ast, ()> {
+    fn get(&self, _: String) -> Result<Ast, ()> {
         Ok(Ast::Empty)
     }
 }

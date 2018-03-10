@@ -11,6 +11,7 @@ use self::lexer::lex;
 use self::parser::{Fun, Ast, parse};
 use super::kipac;
 
+/// Internal macro for dealing with conditionals
 macro_rules! cond {
     ($e:expr) => (
         if $e {
@@ -20,21 +21,25 @@ macro_rules! cond {
         };
     )
 }
+/// Internal macro to make writing return types in eval easier
 macro_rules! value {
     ($i:ident, $e:expr) => (
         Ok(Value::$i($e))
     )
 }
 
+// TODO: Drop this
+/// Value returned by the eval function.
 #[derive(Debug, Clone)]
 pub enum Value {
     Num(f64),
     Vec(Vec<f64>),
 }
 
-pub fn calculate_err(s: String) -> Result<f64, String> {
-    let parsed = try!(parse(lex(&s)));
-    return match eval(parsed) {
+/// Calculate points based on a single string and context information
+pub fn calculate_err<C: ctx::KilaCtx>(s: String, c: C) -> Result<f64, String> {
+    let parsed = try!(parse(lex(&s), c.clone()));
+    return match eval(parsed, c) {
         Ok(p) => {
             match p {
                 Value::Num(n) => Ok(n),
@@ -45,22 +50,27 @@ pub fn calculate_err(s: String) -> Result<f64, String> {
     };
 }
 
+/// Evaluate a string. Passes an EmptyCtx to the functions.
 pub fn calculate(s: String) -> f64 {
-    let parsed = parse(lex(&s)).ok().unwrap();
-    return match eval(parsed).ok().unwrap() {
+    let parsed = parse(lex(&s), ctx::EmptyCtx).ok().unwrap();
+    return match eval(parsed, self::ctx::EmptyCtx).ok().unwrap() {
         Value::Num(n) => n,
         Value::Vec(n) => panic!("Got Vector instead of number: {:#?}", n),
     };
 }
 
-pub fn eval(ast: Ast) -> Result<Value, String> {
+/// A recursive evaluating function. This calculates the final value,
+/// whatever it is a list or something else from the AST supplied and context
+/// information. Do note that on hitting empty context or no context information,
+/// returns an error.
+pub fn eval<C: self::ctx::KilaCtx>(ast: Ast, c: C) -> Result<Value, String> {
     return match ast {
         Ast::Empty => panic!("Met empty abstract syntax tree node {:?}", ast),
         Ast::Leaf(num) => value!(Num, num),
         Ast::Node(vec, fun) => {
             let mut res: Vec<f64> = Vec::new();
             for i in vec {
-                match try!(eval(i.clone())) {
+                match try!(eval(i.clone(), c.clone())) {
                     Value::Num(n) => res.push(n),
                     Value::Vec(v) => {
                         res = v.clone();
@@ -148,6 +158,9 @@ mod tests {
     fn test_mod() {
         let s = "12%2";
         assert_eq!(0.0, calculate(s.into()));
+        assert_eq!(2.0, calculate("12%5".into()));
+        assert_eq!(2.0, calculate("17%5".into()));
+        assert_eq!(2.0, calculate("14%4".into()));
     }
     #[test]
     fn test_pow() {

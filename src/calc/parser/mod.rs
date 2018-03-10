@@ -1,6 +1,9 @@
+//! This module hosts the parser, applicators and their implementations.
+//! The parser used is a Shunting-Yard based parser.
 pub mod applicators;
 use super::lexer::Token;
 
+/// Handy macro for returning arity
 macro_rules! arity {
     ($e:expr, $b:expr) => (
         match $e {
@@ -16,6 +19,7 @@ macro_rules! arity {
     )
 }
 
+/// Easy way of building children internally
 macro_rules! children {
     ($e:expr, $b:expr) => (
         {
@@ -28,6 +32,8 @@ macro_rules! children {
     )
 }
 
+
+/// Functions. These are used in the AST to signal which functions are at use.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum Fun {
     Add,
@@ -74,6 +80,7 @@ pub enum Fun {
     Plus,
 }
 
+/// AST structure itself. Currently no need for boxes or other fancy stuff.
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Ast {
     Node(Vec<Ast>, Fun),
@@ -81,6 +88,7 @@ pub enum Ast {
     Get(String),
     Empty,
 }
+
 impl From<Token> for Fun {
     fn from(token: Token) -> Self {
         return match token {
@@ -127,9 +135,9 @@ impl From<Token> for Fun {
     }
 }
 
-
-pub fn parse(input: Vec<Token>) -> Result<Ast, String> {
-    parse_fn(input, applicators::basic, super::ctx::EmptyCtx)
+/// Parser algorithm.
+pub fn parse<C: super::ctx::KilaCtx + Clone>(input: Vec<Token>, c: C) -> Result<Ast, String> {
+    parse_fn(input, applicators::basic, c)
 }
 
 /// We will use Shunting-Yard algorithm.

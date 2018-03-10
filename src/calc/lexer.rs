@@ -1,9 +1,14 @@
 use std::f64::consts::{E, PI};
+
+/// The lexer of Kila. This function lexes incoming string into a fully fledged
+/// token list. See Token.
 pub fn lex(s: &str) -> Vec<Token> {
     let mut lexer = Lexer::new(s);
     lexer.lex()
 }
 
+/// A lex token. Lexer returns a list of these. Not copy because of the
+/// String.
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Token {
     Add,
