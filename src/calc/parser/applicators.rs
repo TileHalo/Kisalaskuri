@@ -74,8 +74,17 @@ pub fn basic<C: KilaCtx>(nodes: Vec<Ast>, fun: Fun, c: C) -> Ast {
             }
         }
         None => {
-            let mut ns: Vec<Ast> = Vec::new();
-            optimize(ns, fun, c)
+            optimize(nodes, fun, c)
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_optimize() {
+        assert_eq!(Ast::Leaf(12.0), optimize(vec![Ast::Leaf(5.0), Ast::Leaf(7.0)], Fun::Add, EmptyCtx));
+    }
 }

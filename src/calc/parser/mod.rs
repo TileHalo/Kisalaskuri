@@ -268,4 +268,29 @@ where
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::super::lexer::lex;
+    use super::super::ctx::*;
+    use super::*;
+
+    macro_rules! node {
+        ($i:ident, $($e:expr),+) => (
+            Ast::Node(vec![$($e),+], Fun::$i)
+        )
+    }
+
+    macro_rules! leaf {
+        ($e:expr) => (
+            Ast::Leaf($e as f64)
+            )
+    }
+
+    fn parse_test(s: &str) -> Ast {
+        parse_fn(lex(s.into()), applicators::empty, EmptyCtx).ok().unwrap()
+    }
+    #[test]
+    fn test_plus() {
+        assert_eq!(node!(Add, leaf!(5), leaf!(7)), parse_test("5+7"));
+        assert_eq!(leaf!(12), parse(lex("5+7".into()), EmptyCtx).ok().unwrap());
+    }
+}

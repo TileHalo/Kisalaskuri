@@ -21,11 +21,37 @@ macro_rules! cond {
         };
     )
 }
+
+
 /// Internal macro to make writing return types in eval easier
 macro_rules! value {
     ($i:ident, $e:expr) => (
-        Ok(Value::$i($e))
+        {
+            Ok(Value::$i($e))
+        }
     )
+}
+
+fn ast_to_value(a: Ast) -> Result<Value, String> {
+    match a.clone() {
+        Ast::Leaf(n) => Ok(Value::Num(n)),
+        Ast::Node(v, f) => {
+            match f {
+                Fun::List => {
+                    let mut dv: Vec<f64> = Vec::new();
+                    for i in v.clone() {
+                        match i {
+                            Ast::Leaf(n) => dv.push(n),
+                            _ => return Err(format!("{:#?} is not a leaf in Node {:#?}", v, a))
+                        }
+                    }
+                    Ok(Value::Vec(dv))
+                }
+                _ => Err(format!("Function {:#?} is not a list in node {:#?}", f, a))
+            }
+        }
+        _ => Err(format!("Node {:#?} is not a leaf", a))
+    }
 }
 
 // TODO: Drop this
@@ -126,7 +152,9 @@ pub fn eval<C: self::ctx::KilaCtx>(ast: Ast, c: C) -> Result<Value, String> {
                 _ => Err(format!("Function {:#?}", fun)),
             }
         }
-        Ast::Get(_) => panic!("Eval cannot handle Get: {:#?}", ast),
+        Ast::Get(s) => {
+            ast_to_value(try!(c.get(s)))
+        },
     };
 }
 

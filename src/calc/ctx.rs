@@ -11,11 +11,11 @@ pub struct EmptyCtx;
 /// Thus either List or Leaf is returned.
 /// Can also return empty, which signals for empty getter.
 pub trait KilaCtx: Clone {
-    fn get(&self, String) -> Result<Ast, ()>;
+    fn get(&self, String) -> Result<Ast, String>;
 }
 
 impl KilaCtx for EmptyCtx {
-    fn get(&self, _: String) -> Result<Ast, ()> {
+    fn get(&self, _: String) -> Result<Ast, String> {
         Ok(Ast::Empty)
     }
 }
