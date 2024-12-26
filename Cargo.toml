@@ -1,12 +1,11 @@
 [package]
 name = "kilac"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Leo Lahti <leo.lahti1@gmail.com>"]
 documentation = "https://docs.rs/kilac"
-repository = "https://github.com/TileHalo/Kisalaskuri"
 readme = "README.md"
 license-file = "LICENSE"
-description = "Handles Kipa-compatible inputs. Prototype of Riipic"
+description = "ARCHIVED PROJECT"
 
 [lib]
 name = "kilac"
